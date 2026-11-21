@@ -1,0 +1,101 @@
+import raw from './catalog.json';
+import { stageOf, type Progress } from '../lib/progress';
+
+export type MoveType = 'sub' | 'sweep' | 'pass' | 'move' | 'escape';
+export type Tier = 'stand' | 'guard' | 'leg' | 'pin' | 'dom';
+
+export interface Position { id: string; name: string; tier: Tier; x: number; y: number }
+export interface Technique { id: string; name: string; type: MoveType; from: string[]; to: string | null; note: string; gi: boolean }
+
+export const TYPES: Record<MoveType, { label: string; plural: string }> = {
+  sub: { label: 'Submission', plural: 'Submissions' },
+  sweep: { label: 'Sweep', plural: 'Sweeps' },
+  pass: { label: 'Guard pass', plural: 'Guard passes' },
+  move: { label: 'Transition', plural: 'Transitions' },
+  escape: { label: 'Escape', plural: 'Escapes' },
+};
+export const TIERS: Record<Tier, string> = {
+  stand: 'Standing', guard: 'Guard · bottom', leg: 'Leg entanglement', pin: 'Pin · top', dom: 'Dominant · top',
+};
+
+export const positions = raw.positions as Position[];
+export const techniques = raw.techniques as Technique[];
+export const positionLinks = raw.positionLinks as [string, string][];
+export const chains = raw.chains as string[][];
+
+export const positionById = new Map(positions.map(p => [p.id, p]));
+export const techniqueById = new Map(techniques.map(t => [t.id, t]));
+export const isPosition = (id: string) => positionById.has(id);
+export const nameOf = (id: string) => positionById.get(id)?.name ?? techniqueById.get(id)?.name ?? id;
+
+export const entryNo = new Map<string, string>([
+  ...techniques.map((t, i) => [t.id, '#' + String(i + 1).padStart(3, '0')] as [string, string]),
+  ...positions.map((p, i) => [p.id, 'P' + String(i + 1).padStart(2, '0')] as [string, string]),
+]);
+
+/** Moves chained with this one in a classic combination. */
+export function combos(t: Technique): string[] {
+  const out = new Set<string>();
+  for (const c of chains) if (c.includes(t.id)) for (const id of c) if (id !== t.id) out.add(id);
+  return [...out];
+}
+
+/** Moves that work from the same positions, most overlap first. */
+export function relatedMoves(t: Technique): string[] {
+  return techniques.filter(o => o !== t)
+    .map(o => ({ id: o.id, s: o.from.filter(h => t.from.includes(h)).length + (o.type === t.type ? 0.5 : 0) }))
+    .filter(x => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 8).map(x => x.id);
+}
+
+export const MAX_FROM = Math.max(...techniques.map(t => t.from.length));
+export const MAX_COMBOS = Math.max(...techniques.map(t => combos(t).length));
+
+export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in'; have: number; total: number }
+
+/** How much of your game exists at a position, counted at Hit or better. */
+export function scorecard(p: Progress, posId: string): ScoreRow[] {
+  const at = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length });
+  const rows: ScoreRow[] = [];
+  const from = techniques.filter(t => t.from.includes(posId));
+  const attacks = from.filter(t => t.type === 'sub' || t.type === 'sweep' || t.type === 'move');
+  const passes = from.filter(t => t.type === 'pass');
+  const escapes = from.filter(t => t.type === 'escape');
+  const waysIn = techniques.filter(t => t.to === posId);
+  if (attacks.length) rows.push({ label: 'Attacks', ...at(attacks) });
+  if (passes.length) rows.push({ label: 'Passes', ...at(passes) });
+  if (escapes.length) rows.push({ label: 'Escapes', ...at(escapes) });
+  if (waysIn.length) rows.push({ label: 'Ways in', ...at(waysIn) });
+  return rows;
+}
+
+/** A position counts as part of your game once any move from or into it is logged. */
+export const positionActive = (p: Progress, posId: string) =>
+  techniques.some(t => (t.from.includes(posId) || t.to === posId) && stageOf(p, t.id) >= 1);
+
+/** Whether an unlogged entry sits next to something you already train. */
+export function nearby(p: Progress, id: string): boolean {
+  const pos = positionById.get(id);
+  if (pos) {
+    if (id === 'standing') return true;
+    if (positionLinks.some(([a, b]) => (a === id && positionActive(p, b)) || (b === id && positionActive(p, a)))) return true;
+    return techniques.some(t => t.to === id && stageOf(p, t.id) >= 2);
+  }
+  const t = techniqueById.get(id);
+  return !!t && t.from.some(h => h === 'standing' || positionActive(p, h));
+}
+
+export interface Gap { positionId: string; text: string; weight: number }
+
+export function gaps(p: Progress, limit = 4): Gap[] {
+  const out: Gap[] = [];
+  for (const pos of positions) {
+    if (!positionActive(p, pos.id)) continue;
+    for (const r of scorecard(p, pos.id)) {
+      if (r.have) continue;
+      if (r.label === 'Escapes') out.push({ positionId: pos.id, weight: 3, text: `No escape from bottom of ${pos.name} at Hit yet` });
+      else if (r.label === 'Attacks') out.push({ positionId: pos.id, weight: 2, text: `No attack from ${pos.name} at Hit yet` });
+      else if (r.label === 'Passes') out.push({ positionId: pos.id, weight: 1, text: `No pass for ${pos.name} at Hit yet` });
+    }
+  }
+  return out.sort((a, b) => b.weight - a.weight).slice(0, limit);
+}

@@ -1,0 +1,1537 @@
+{
+ "version": 1,
+ "positions": [
+  {
+   "id": "standing",
+   "name": "Standing",
+   "tier": "stand",
+   "x": 760,
+   "y": 70
+  },
+  {
+   "id": "closed",
+   "name": "Closed guard",
+   "tier": "guard",
+   "x": 180,
+   "y": 330
+  },
+  {
+   "id": "collar",
+   "name": "Collar-sleeve",
+   "tier": "guard",
+   "x": 380,
+   "y": 240
+  },
+  {
+   "id": "spider",
+   "name": "Spider guard",
+   "tier": "guard",
+   "x": 110,
+   "y": 540
+  },
+  {
+   "id": "lasso",
+   "name": "Lasso guard",
+   "tier": "guard",
+   "x": 300,
+   "y": 630
+  },
+  {
+   "id": "dlr",
+   "name": "De La Riva",
+   "tier": "guard",
+   "x": 530,
+   "y": 470
+  },
+  {
+   "id": "rdlr",
+   "name": "Reverse DLR",
+   "tier": "guard",
+   "x": 640,
+   "y": 660
+  },
+  {
+   "id": "butterfly",
+   "name": "Butterfly",
+   "tier": "guard",
+   "x": 770,
+   "y": 300
+  },
+  {
+   "id": "xguard",
+   "name": "X-guard",
+   "tier": "guard",
+   "x": 920,
+   "y": 450
+  },
+  {
+   "id": "half",
+   "name": "Half guard",
+   "tier": "guard",
+   "x": 1190,
+   "y": 300
+  },
+  {
+   "id": "kneeShield",
+   "name": "Knee shield",
+   "tier": "guard",
+   "x": 1400,
+   "y": 220
+  },
+  {
+   "id": "deepHalf",
+   "name": "Deep half",
+   "tier": "guard",
+   "x": 1380,
+   "y": 500
+  },
+  {
+   "id": "kguard",
+   "name": "K-guard",
+   "tier": "leg",
+   "x": 400,
+   "y": 820
+  },
+  {
+   "id": "slx",
+   "name": "Single leg X / straight ashi",
+   "tier": "leg",
+   "x": 1000,
+   "y": 690
+  },
+  {
+   "id": "outsideAshi",
+   "name": "Outside ashi",
+   "tier": "leg",
+   "x": 1220,
+   "y": 800
+  },
+  {
+   "id": "saddle",
+   "name": "Saddle (inside sankaku)",
+   "tier": "leg",
+   "x": 820,
+   "y": 880
+  },
+  {
+   "id": "crossAshi",
+   "name": "Cross ashi",
+   "tier": "leg",
+   "x": 1040,
+   "y": 960
+  },
+  {
+   "id": "fifty",
+   "name": "50-50",
+   "tier": "leg",
+   "x": 600,
+   "y": 940
+  },
+  {
+   "id": "backside50",
+   "name": "Back-side 50-50",
+   "tier": "leg",
+   "x": 420,
+   "y": 1030
+  },
+  {
+   "id": "truck",
+   "name": "Truck",
+   "tier": "pin",
+   "x": 130,
+   "y": 960
+  },
+  {
+   "id": "topHalf",
+   "name": "Top half guard",
+   "tier": "pin",
+   "x": 1340,
+   "y": 1100
+  },
+  {
+   "id": "side",
+   "name": "Side control",
+   "tier": "pin",
+   "x": 980,
+   "y": 1200
+  },
+  {
+   "id": "kesa",
+   "name": "Kesa gatame",
+   "tier": "pin",
+   "x": 1200,
+   "y": 1320
+  },
+  {
+   "id": "kob",
+   "name": "Knee on belly",
+   "tier": "pin",
+   "x": 760,
+   "y": 1190
+  },
+  {
+   "id": "ns",
+   "name": "North-south",
+   "tier": "pin",
+   "x": 560,
+   "y": 1250
+  },
+  {
+   "id": "turtle",
+   "name": "Turtle",
+   "tier": "pin",
+   "x": 200,
+   "y": 1170
+  },
+  {
+   "id": "crucifix",
+   "name": "Crucifix",
+   "tier": "pin",
+   "x": 320,
+   "y": 1350
+  },
+  {
+   "id": "mount",
+   "name": "Mount",
+   "tier": "dom",
+   "x": 900,
+   "y": 1440
+  },
+  {
+   "id": "sMount",
+   "name": "High / S-mount",
+   "tier": "dom",
+   "x": 1150,
+   "y": 1490
+  },
+  {
+   "id": "techMount",
+   "name": "Technical mount",
+   "tier": "dom",
+   "x": 680,
+   "y": 1470
+  },
+  {
+   "id": "back",
+   "name": "Back",
+   "tier": "dom",
+   "x": 440,
+   "y": 1490
+  }
+ ],
+ "positionLinks": [
+  [
+   "standing",
+   "closed"
+  ],
+  [
+   "standing",
+   "collar"
+  ],
+  [
+   "standing",
+   "dlr"
+  ],
+  [
+   "standing",
+   "butterfly"
+  ],
+  [
+   "standing",
+   "turtle"
+  ],
+  [
+   "closed",
+   "collar"
+  ],
+  [
+   "closed",
+   "half"
+  ],
+  [
+   "collar",
+   "spider"
+  ],
+  [
+   "spider",
+   "lasso"
+  ],
+  [
+   "collar",
+   "dlr"
+  ],
+  [
+   "dlr",
+   "rdlr"
+  ],
+  [
+   "dlr",
+   "xguard"
+  ],
+  [
+   "dlr",
+   "slx"
+  ],
+  [
+   "dlr",
+   "fifty"
+  ],
+  [
+   "rdlr",
+   "fifty"
+  ],
+  [
+   "rdlr",
+   "saddle"
+  ],
+  [
+   "butterfly",
+   "xguard"
+  ],
+  [
+   "butterfly",
+   "slx"
+  ],
+  [
+   "butterfly",
+   "saddle"
+  ],
+  [
+   "xguard",
+   "slx"
+  ],
+  [
+   "slx",
+   "saddle"
+  ],
+  [
+   "slx",
+   "outsideAshi"
+  ],
+  [
+   "slx",
+   "crossAshi"
+  ],
+  [
+   "slx",
+   "fifty"
+  ],
+  [
+   "saddle",
+   "crossAshi"
+  ],
+  [
+   "saddle",
+   "fifty"
+  ],
+  [
+   "fifty",
+   "backside50"
+  ],
+  [
+   "kguard",
+   "saddle"
+  ],
+  [
+   "kguard",
+   "crossAshi"
+  ],
+  [
+   "half",
+   "kneeShield"
+  ],
+  [
+   "half",
+   "deepHalf"
+  ],
+  [
+   "deepHalf",
+   "slx"
+  ],
+  [
+   "half",
+   "slx"
+  ],
+  [
+   "topHalf",
+   "side"
+  ],
+  [
+   "topHalf",
+   "mount"
+  ],
+  [
+   "side",
+   "kob"
+  ],
+  [
+   "side",
+   "ns"
+  ],
+  [
+   "side",
+   "kesa"
+  ],
+  [
+   "side",
+   "mount"
+  ],
+  [
+   "kob",
+   "mount"
+  ],
+  [
+   "side",
+   "crucifix"
+  ],
+  [
+   "turtle",
+   "back"
+  ],
+  [
+   "turtle",
+   "crucifix"
+  ],
+  [
+   "turtle",
+   "truck"
+  ],
+  [
+   "truck",
+   "back"
+  ],
+  [
+   "mount",
+   "sMount"
+  ],
+  [
+   "mount",
+   "techMount"
+  ],
+  [
+   "techMount",
+   "back"
+  ],
+  [
+   "back",
+   "mount"
+  ]
+ ],
+ "techniques": [
+  {
+   "id": "armbar",
+   "name": "Armbar",
+   "type": "sub",
+   "from": [
+    "closed",
+    "kneeShield",
+    "sMount",
+    "techMount",
+    "side",
+    "kob",
+    "ns",
+    "back",
+    "crucifix"
+   ],
+   "to": null,
+   "note": "Elbow lock. Also flying from standing. Chains with triangle and omoplata from guard.",
+   "gi": false
+  },
+  {
+   "id": "triangle",
+   "name": "Triangle choke",
+   "type": "sub",
+   "from": [
+    "closed",
+    "kneeShield",
+    "spider",
+    "lasso",
+    "collar",
+    "sMount"
+   ],
+   "to": null,
+   "note": "One arm in, one out. From S-mount it is the mounted triangle.",
+   "gi": false
+  },
+  {
+   "id": "kimura",
+   "name": "Kimura",
+   "type": "sub",
+   "from": [
+    "closed",
+    "half",
+    "kneeShield",
+    "side",
+    "ns",
+    "topHalf"
+   ],
+   "to": null,
+   "note": "Shoulder lock. Pairs with the hip bump sweep from closed guard.",
+   "gi": false
+  },
+  {
+   "id": "omoplata",
+   "name": "Omoplata",
+   "type": "sub",
+   "from": [
+    "closed",
+    "spider",
+    "lasso",
+    "collar"
+   ],
+   "to": null,
+   "note": "Shoulder lock with the legs. If they roll out, take top.",
+   "gi": false
+  },
+  {
+   "id": "americana",
+   "name": "Americana",
+   "type": "sub",
+   "from": [
+    "closed",
+    "side",
+    "mount"
+   ],
+   "to": null,
+   "note": "Bent-arm shoulder lock, near arm pinned to the mat.",
+   "gi": false
+  },
+  {
+   "id": "guillotine",
+   "name": "Guillotine",
+   "type": "sub",
+   "from": [
+    "closed",
+    "butterfly",
+    "turtle",
+    "standing"
+   ],
+   "to": null,
+   "note": "Front choke when the head drops. Arm-in version from butterfly.",
+   "gi": false
+  },
+  {
+   "id": "armTriangle",
+   "name": "Arm triangle",
+   "type": "sub",
+   "from": [
+    "mount",
+    "side",
+    "topHalf"
+   ],
+   "to": null,
+   "note": "Head-and-arm choke. Walk to the far side to finish.",
+   "gi": false
+  },
+  {
+   "id": "ezekiel",
+   "name": "Ezekiel choke",
+   "type": "sub",
+   "from": [
+    "closed",
+    "mount"
+   ],
+   "to": null,
+   "note": "Sleeve choke. Works from inside their closed guard too.",
+   "gi": false
+  },
+  {
+   "id": "crossCollar",
+   "name": "Cross collar choke",
+   "type": "sub",
+   "from": [
+    "closed",
+    "mount",
+    "sMount"
+   ],
+   "to": null,
+   "note": "Deep first grip, then the second.",
+   "gi": true
+  },
+  {
+   "id": "bowArrow",
+   "name": "Bow and arrow choke",
+   "type": "sub",
+   "from": [
+    "back",
+    "side"
+   ],
+   "to": null,
+   "note": "Collar grip plus pant grip, stretch them out.",
+   "gi": true
+  },
+  {
+   "id": "baseballBat",
+   "name": "Baseball bat choke",
+   "type": "sub",
+   "from": [
+    "side",
+    "kob"
+   ],
+   "to": null,
+   "note": "Both hands on the collar, spin to finish.",
+   "gi": true
+  },
+  {
+   "id": "paperCutter",
+   "name": "Paper cutter choke",
+   "type": "sub",
+   "from": [
+    "side"
+   ],
+   "to": null,
+   "note": "Lapel across the throat from side control.",
+   "gi": true
+  },
+  {
+   "id": "loopChoke",
+   "name": "Loop choke",
+   "type": "sub",
+   "from": [
+    "closed"
+   ],
+   "to": null,
+   "note": "When their head is low in your guard.",
+   "gi": true
+  },
+  {
+   "id": "clockChoke",
+   "name": "Clock choke",
+   "type": "sub",
+   "from": [
+    "turtle"
+   ],
+   "to": null,
+   "note": "Collar choke, walk your legs around like a clock hand.",
+   "gi": true
+  },
+  {
+   "id": "rnc",
+   "name": "Rear naked choke",
+   "type": "sub",
+   "from": [
+    "back"
+   ],
+   "to": null,
+   "note": "The main back finish.",
+   "gi": false
+  },
+  {
+   "id": "shortChoke",
+   "name": "Short choke",
+   "type": "sub",
+   "from": [
+    "back"
+   ],
+   "to": null,
+   "note": "When they defend the full RNC.",
+   "gi": false
+  },
+  {
+   "id": "nsChoke",
+   "name": "North-south choke",
+   "type": "sub",
+   "from": [
+    "ns"
+   ],
+   "to": null,
+   "note": "Arm-in choke from north-south.",
+   "gi": false
+  },
+  {
+   "id": "darce",
+   "name": "D'Arce choke",
+   "type": "sub",
+   "from": [
+    "turtle",
+    "standing"
+   ],
+   "to": null,
+   "note": "Front headlock choke, arm threaded under the arm.",
+   "gi": false
+  },
+  {
+   "id": "anaconda",
+   "name": "Anaconda choke",
+   "type": "sub",
+   "from": [
+    "turtle",
+    "standing"
+   ],
+   "to": null,
+   "note": "Front headlock choke, roll to finish.",
+   "gi": false
+  },
+  {
+   "id": "peruvian",
+   "name": "Peruvian necktie",
+   "type": "sub",
+   "from": [
+    "turtle"
+   ],
+   "to": null,
+   "note": "Front headlock choke with the legs over the back.",
+   "gi": false
+  },
+  {
+   "id": "gogoplata",
+   "name": "Gogoplata",
+   "type": "sub",
+   "from": [
+    "closed"
+   ],
+   "to": null,
+   "note": "Shin across the throat from rubber guard or overhook guard.",
+   "gi": false
+  },
+  {
+   "id": "kesaLock",
+   "name": "Kesa armlock",
+   "type": "sub",
+   "from": [
+    "kesa"
+   ],
+   "to": null,
+   "note": "Trap their arm with your leg and straighten it.",
+   "gi": false
+  },
+  {
+   "id": "headArm",
+   "name": "Head-and-arm choke",
+   "type": "sub",
+   "from": [
+    "kesa"
+   ],
+   "to": null,
+   "note": "Choke from the scarf hold.",
+   "gi": false
+  },
+  {
+   "id": "crucifixChoke",
+   "name": "Crucifix neck crank",
+   "type": "sub",
+   "from": [
+    "crucifix"
+   ],
+   "to": null,
+   "note": "Neck crank or choke with both arms trapped.",
+   "gi": false
+  },
+  {
+   "id": "electricChair",
+   "name": "Electric chair",
+   "type": "sub",
+   "from": [
+    "half",
+    "truck"
+   ],
+   "to": null,
+   "note": "Hip and groin stretch. Called banana split from the truck.",
+   "gi": false
+  },
+  {
+   "id": "twister",
+   "name": "Twister",
+   "type": "sub",
+   "from": [
+    "truck"
+   ],
+   "to": null,
+   "note": "Spinal lock. Banned in many rulesets.",
+   "gi": false
+  },
+  {
+   "id": "straightAnkle",
+   "name": "Straight ankle lock",
+   "type": "sub",
+   "from": [
+    "slx",
+    "outsideAshi",
+    "crossAshi",
+    "fifty",
+    "deepHalf"
+   ],
+   "to": null,
+   "note": "Achilles lock. The most widely legal leg lock.",
+   "gi": false
+  },
+  {
+   "id": "outsideHeel",
+   "name": "Outside heel hook",
+   "type": "sub",
+   "from": [
+    "slx",
+    "outsideAshi",
+    "saddle",
+    "fifty",
+    "backside50"
+   ],
+   "to": null,
+   "note": "Check your ruleset before using heel hooks.",
+   "gi": false
+  },
+  {
+   "id": "insideHeel",
+   "name": "Inside heel hook",
+   "type": "sub",
+   "from": [
+    "saddle",
+    "crossAshi",
+    "fifty",
+    "kguard"
+   ],
+   "to": null,
+   "note": "Highest-percentage finish from the saddle. Check your ruleset.",
+   "gi": false
+  },
+  {
+   "id": "toeHold",
+   "name": "Toe hold",
+   "type": "sub",
+   "from": [
+    "slx",
+    "outsideAshi",
+    "saddle",
+    "crossAshi",
+    "fifty",
+    "backside50",
+    "topHalf"
+   ],
+   "to": null,
+   "note": "Figure-four on the foot.",
+   "gi": false
+  },
+  {
+   "id": "kneebar",
+   "name": "Kneebar",
+   "type": "sub",
+   "from": [
+    "slx",
+    "outsideAshi",
+    "saddle",
+    "crossAshi",
+    "fifty",
+    "backside50"
+   ],
+   "to": null,
+   "note": "Slide up the leg when they turn away or stand.",
+   "gi": false
+  },
+  {
+   "id": "estima",
+   "name": "Estima lock",
+   "type": "sub",
+   "from": [
+    "slx",
+    "deepHalf",
+    "topHalf"
+   ],
+   "to": null,
+   "note": "Foot lock with their foot pinned at your hip.",
+   "gi": false
+  },
+  {
+   "id": "calfSlicer",
+   "name": "Calf slicer",
+   "type": "sub",
+   "from": [
+    "saddle",
+    "truck",
+    "topHalf"
+   ],
+   "to": null,
+   "note": "Compression lock behind the knee.",
+   "gi": false
+  },
+  {
+   "id": "scissor",
+   "name": "Scissor sweep",
+   "type": "sweep",
+   "from": [
+    "closed"
+   ],
+   "to": "mount",
+   "note": "Collar and sleeve grip, cut the legs.",
+   "gi": false
+  },
+  {
+   "id": "hipBump",
+   "name": "Hip bump sweep",
+   "type": "sweep",
+   "from": [
+    "closed"
+   ],
+   "to": "mount",
+   "note": "When they posture up. Chains to kimura and guillotine.",
+   "gi": false
+  },
+  {
+   "id": "flower",
+   "name": "Flower sweep",
+   "type": "sweep",
+   "from": [
+    "closed"
+   ],
+   "to": "mount",
+   "note": "Pendulum swing with arm and leg control.",
+   "gi": false
+  },
+  {
+   "id": "omoplataSweep",
+   "name": "Omoplata sweep",
+   "type": "sweep",
+   "from": [
+    "closed",
+    "spider",
+    "lasso"
+   ],
+   "to": "side",
+   "note": "When they roll out of the omoplata.",
+   "gi": false
+  },
+  {
+   "id": "butterflySweep",
+   "name": "Butterfly sweep",
+   "type": "sweep",
+   "from": [
+    "butterfly"
+   ],
+   "to": "mount",
+   "note": "Underhook, arm control, elevate with the hook.",
+   "gi": false
+  },
+  {
+   "id": "oldSchool",
+   "name": "Old school sweep",
+   "type": "sweep",
+   "from": [
+    "half"
+   ],
+   "to": "side",
+   "note": "Underhook and grab the far ankle.",
+   "gi": false
+  },
+  {
+   "id": "kneeLever",
+   "name": "Knee lever",
+   "type": "sweep",
+   "from": [
+    "half",
+    "rdlr"
+   ],
+   "to": "side",
+   "note": "Backup when the old school is blocked.",
+   "gi": false
+  },
+  {
+   "id": "wrestleUp",
+   "name": "Wrestle-up",
+   "type": "sweep",
+   "from": [
+    "half",
+    "kneeShield"
+   ],
+   "to": "side",
+   "note": "Come up on the underhook to a single leg.",
+   "gi": false
+  },
+  {
+   "id": "waiter",
+   "name": "Waiter sweep",
+   "type": "sweep",
+   "from": [
+    "deepHalf"
+   ],
+   "to": "side",
+   "note": "Lift the leg and come up.",
+   "gi": false
+  },
+  {
+   "id": "homer",
+   "name": "Homer Simpson sweep",
+   "type": "sweep",
+   "from": [
+    "deepHalf"
+   ],
+   "to": "side",
+   "note": "Roll under to come up on top.",
+   "gi": false
+  },
+  {
+   "id": "techStandup",
+   "name": "Technical stand-up",
+   "type": "sweep",
+   "from": [
+    "xguard",
+    "slx"
+   ],
+   "to": "standing",
+   "note": "Kick the hooks, stand up in base holding the leg.",
+   "gi": false
+  },
+  {
+   "id": "overhead",
+   "name": "Overhead sweep",
+   "type": "sweep",
+   "from": [
+    "xguard"
+   ],
+   "to": "side",
+   "note": "When they lean forward.",
+   "gi": false
+  },
+  {
+   "id": "kickOver",
+   "name": "Kick-over sweep",
+   "type": "sweep",
+   "from": [
+    "slx"
+   ],
+   "to": "standing",
+   "note": "Kick the hip and come up on the leg.",
+   "gi": false
+  },
+  {
+   "id": "tripod",
+   "name": "Tripod sweep",
+   "type": "sweep",
+   "from": [
+    "dlr"
+   ],
+   "to": "standing",
+   "note": "Foot on the hip, pull the ankle.",
+   "gi": false
+  },
+  {
+   "id": "sickle",
+   "name": "Sickle sweep",
+   "type": "sweep",
+   "from": [
+    "dlr"
+   ],
+   "to": "side",
+   "note": "Chop the far ankle.",
+   "gi": false
+  },
+  {
+   "id": "spiderSweep",
+   "name": "Spider sweep",
+   "type": "sweep",
+   "from": [
+    "spider"
+   ],
+   "to": "side",
+   "note": "Sleeve grips, off-balance over your head.",
+   "gi": true
+  },
+  {
+   "id": "lassoSweep",
+   "name": "Lasso sweep",
+   "type": "sweep",
+   "from": [
+    "lasso"
+   ],
+   "to": "side",
+   "note": "Pull the sleeve, push the hip.",
+   "gi": true
+  },
+  {
+   "id": "collarSleeveSweep",
+   "name": "Collar-sleeve sweep",
+   "type": "sweep",
+   "from": [
+    "collar"
+   ],
+   "to": "standing",
+   "note": "Push the knee, pull the sleeve.",
+   "gi": true
+  },
+  {
+   "id": "fiftySweep",
+   "name": "50-50 sweep",
+   "type": "sweep",
+   "from": [
+    "fifty"
+   ],
+   "to": "side",
+   "note": "Pull their leg and come up on top.",
+   "gi": false
+  },
+  {
+   "id": "toreando",
+   "name": "Toreando pass",
+   "type": "pass",
+   "from": [
+    "dlr",
+    "spider",
+    "lasso",
+    "butterfly"
+   ],
+   "to": "side",
+   "note": "Grip the pants and redirect the legs.",
+   "gi": false
+  },
+  {
+   "id": "kneeSlice",
+   "name": "Knee slice",
+   "type": "pass",
+   "from": [
+    "half",
+    "kneeShield",
+    "dlr",
+    "butterfly"
+   ],
+   "to": "side",
+   "note": "Cut the knee through with an underhook or crossface.",
+   "gi": false
+  },
+  {
+   "id": "legDrag",
+   "name": "Leg drag",
+   "type": "pass",
+   "from": [
+    "dlr",
+    "rdlr"
+   ],
+   "to": "side",
+   "note": "Pin the legs to one side. Chains to the back.",
+   "gi": false
+  },
+  {
+   "id": "overUnder",
+   "name": "Over-under pass",
+   "type": "pass",
+   "from": [
+    "closed",
+    "butterfly"
+   ],
+   "to": "side",
+   "note": "Pressure pass. Stack and walk around.",
+   "gi": false
+  },
+  {
+   "id": "doubleUnder",
+   "name": "Double under pass",
+   "type": "pass",
+   "from": [
+    "closed"
+   ],
+   "to": "side",
+   "note": "Stack them and pass around a leg.",
+   "gi": false
+  },
+  {
+   "id": "bodyLock",
+   "name": "Body lock pass",
+   "type": "pass",
+   "from": [
+    "butterfly",
+    "half"
+   ],
+   "to": "side",
+   "note": "Hug the hips and flatten them.",
+   "gi": false
+  },
+  {
+   "id": "xPass",
+   "name": "X-pass",
+   "type": "pass",
+   "from": [
+    "butterfly"
+   ],
+   "to": "side",
+   "note": "Push the knees, step around.",
+   "gi": false
+  },
+  {
+   "id": "smash",
+   "name": "Smash pass",
+   "type": "pass",
+   "from": [
+    "butterfly"
+   ],
+   "to": "side",
+   "note": "Fold the legs to one side.",
+   "gi": false
+  },
+  {
+   "id": "stackPass",
+   "name": "Stack pass",
+   "type": "pass",
+   "from": [
+    "closed",
+    "spider",
+    "lasso"
+   ],
+   "to": "side",
+   "note": "Also counters the triangle.",
+   "gi": false
+  },
+  {
+   "id": "floatPass",
+   "name": "Float pass",
+   "type": "pass",
+   "from": [
+    "topHalf"
+   ],
+   "to": "side",
+   "note": "Flatten them and float your hips free.",
+   "gi": false
+  },
+  {
+   "id": "mountPass",
+   "name": "Mount pass",
+   "type": "pass",
+   "from": [
+    "topHalf"
+   ],
+   "to": "mount",
+   "note": "Slide the knee through to mount.",
+   "gi": false
+  },
+  {
+   "id": "backstep",
+   "name": "Backstep",
+   "type": "pass",
+   "from": [
+    "topHalf",
+    "rdlr"
+   ],
+   "to": "saddle",
+   "note": "Turn away into a leg entanglement or side control.",
+   "gi": false
+  },
+  {
+   "id": "armDrag",
+   "name": "Arm drag",
+   "type": "move",
+   "from": [
+    "closed",
+    "butterfly",
+    "standing"
+   ],
+   "to": "back",
+   "note": "Drag the arm across and climb to the back.",
+   "gi": false
+  },
+  {
+   "id": "berimbolo",
+   "name": "Berimbolo",
+   "type": "move",
+   "from": [
+    "dlr"
+   ],
+   "to": "back",
+   "note": "Invert under them to take the back.",
+   "gi": false
+  },
+  {
+   "id": "kissDragon",
+   "name": "Kiss of the dragon",
+   "type": "move",
+   "from": [
+    "dlr",
+    "rdlr"
+   ],
+   "to": "back",
+   "note": "Inverted back take.",
+   "gi": false
+  },
+  {
+   "id": "matrix",
+   "name": "Matrix",
+   "type": "move",
+   "from": [
+    "kguard"
+   ],
+   "to": "back",
+   "note": "Back take from K-guard.",
+   "gi": false
+  },
+  {
+   "id": "dogfight",
+   "name": "Dogfight back take",
+   "type": "move",
+   "from": [
+    "half"
+   ],
+   "to": "back",
+   "note": "Come up on the underhook, go behind.",
+   "gi": false
+  },
+  {
+   "id": "giftWrap",
+   "name": "Gift wrap",
+   "type": "move",
+   "from": [
+    "mount"
+   ],
+   "to": "back",
+   "note": "Wrap their arm around their neck, roll to the back.",
+   "gi": false
+  },
+  {
+   "id": "seatbelt",
+   "name": "Seatbelt and hooks",
+   "type": "move",
+   "from": [
+    "turtle"
+   ],
+   "to": "back",
+   "note": "Get the seatbelt grip, then the hooks.",
+   "gi": false
+  },
+  {
+   "id": "backDoor",
+   "name": "Back door",
+   "type": "move",
+   "from": [
+    "deepHalf"
+   ],
+   "to": "back",
+   "note": "Escape out the back of deep half.",
+   "gi": false
+  },
+  {
+   "id": "imanari",
+   "name": "Imanari roll",
+   "type": "move",
+   "from": [
+    "standing"
+   ],
+   "to": "saddle",
+   "note": "Rolling entry to the saddle.",
+   "gi": false
+  },
+  {
+   "id": "doubleLeg",
+   "name": "Double leg",
+   "type": "move",
+   "from": [
+    "standing"
+   ],
+   "to": "side",
+   "note": "Takedown. Usually lands in their guard or side control.",
+   "gi": false
+  },
+  {
+   "id": "singleLeg",
+   "name": "Single leg",
+   "type": "move",
+   "from": [
+    "standing"
+   ],
+   "to": "side",
+   "note": "Takedown off one leg.",
+   "gi": false
+  },
+  {
+   "id": "osoto",
+   "name": "Osoto gari",
+   "type": "move",
+   "from": [
+    "standing"
+   ],
+   "to": "side",
+   "note": "Judo reap.",
+   "gi": false
+  },
+  {
+   "id": "snapDown",
+   "name": "Snap down",
+   "type": "move",
+   "from": [
+    "standing"
+   ],
+   "to": "turtle",
+   "note": "Front headlock, then go behind or choke.",
+   "gi": false
+  },
+  {
+   "id": "upa",
+   "name": "Upa (bridge and roll)",
+   "type": "escape",
+   "from": [
+    "mount",
+    "side",
+    "kesa"
+   ],
+   "to": null,
+   "note": "Trap an arm and leg, bridge over. You end on top.",
+   "gi": false
+  },
+  {
+   "id": "elbowKnee",
+   "name": "Elbow-knee escape",
+   "type": "escape",
+   "from": [
+    "mount"
+   ],
+   "to": "half",
+   "note": "Shrimp to half or full guard.",
+   "gi": false
+  },
+  {
+   "id": "heelDrag",
+   "name": "Heel drag escape",
+   "type": "escape",
+   "from": [
+    "mount"
+   ],
+   "to": "half",
+   "note": "Drag your heel free to half guard.",
+   "gi": false
+  },
+  {
+   "id": "shrimp",
+   "name": "Shrimp to guard",
+   "type": "escape",
+   "from": [
+    "side",
+    "kob"
+   ],
+   "to": "closed",
+   "note": "Frame, hip out, knee in.",
+   "gi": false
+  },
+  {
+   "id": "ghost",
+   "name": "Ghost escape",
+   "type": "escape",
+   "from": [
+    "side"
+   ],
+   "to": "turtle",
+   "note": "Slip under and out.",
+   "gi": false
+  },
+  {
+   "id": "shoulderMat",
+   "name": "Shoulder-to-mat escape",
+   "type": "escape",
+   "from": [
+    "back"
+   ],
+   "to": "closed",
+   "note": "Get your shoulders down, turn in.",
+   "gi": false
+  },
+  {
+   "id": "granby",
+   "name": "Granby roll",
+   "type": "escape",
+   "from": [
+    "turtle"
+   ],
+   "to": "closed",
+   "note": "Shoulder roll back to guard.",
+   "gi": false
+  },
+  {
+   "id": "sitOut",
+   "name": "Sit-out",
+   "type": "escape",
+   "from": [
+    "turtle"
+   ],
+   "to": null,
+   "note": "Wrestling reversal to get on top.",
+   "gi": false
+  }
+ ],
+ "chains": [
+  [
+   "hipBump",
+   "kimura",
+   "guillotine"
+  ],
+  [
+   "armbar",
+   "triangle",
+   "omoplata"
+  ],
+  [
+   "crossCollar",
+   "armbar"
+  ],
+  [
+   "scissor",
+   "flower"
+  ],
+  [
+   "omoplata",
+   "omoplataSweep"
+  ],
+  [
+   "oldSchool",
+   "kneeLever"
+  ],
+  [
+   "dogfight",
+   "wrestleUp"
+  ],
+  [
+   "butterflySweep",
+   "techStandup"
+  ],
+  [
+   "berimbolo",
+   "rnc"
+  ],
+  [
+   "toreando",
+   "kneeSlice"
+  ],
+  [
+   "kneeSlice",
+   "backstep"
+  ],
+  [
+   "legDrag",
+   "rnc"
+  ],
+  [
+   "americana",
+   "armbar",
+   "triangle"
+  ],
+  [
+   "giftWrap",
+   "rnc"
+  ],
+  [
+   "rnc",
+   "armbar"
+  ],
+  [
+   "rnc",
+   "bowArrow"
+  ],
+  [
+   "snapDown",
+   "darce",
+   "anaconda",
+   "guillotine"
+  ],
+  [
+   "straightAnkle",
+   "kickOver"
+  ],
+  [
+   "upa",
+   "elbowKnee"
+  ],
+  [
+   "insideHeel",
+   "outsideHeel"
+  ],
+  [
+   "toeHold",
+   "kneebar"
+  ],
+  [
+   "seatbelt",
+   "rnc"
+  ]
+ ]
+}

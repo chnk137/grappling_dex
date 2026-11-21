@@ -1,0 +1,1112 @@
+<title>Grappling Dex</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: header with views + log button; Dex grid (or pan/zoom Map) on the left, entry panel docked right (stacked on phones); session log opens as a sheet. Single dark "game board" look by choice. */
+:root {
+  color-scheme: dark;
+  --bg: #0e1320;
+  --bg-2: #141b2c;
+  --panel: #182033;
+  --line: #2a3552;
+  --ink: #e7eaf3;
+  --muted: #8d97b0;
+  --brass: #d9b46c;
+  --brass-soft: rgba(217, 180, 108, .16);
+  --sub: #f2766d;
+  --sweep: #4fcbb2;
+  --pass: #6fb2ff;
+  --move: #b58df2;
+  --escape: #a3adc4;
+  --gap: #f2766d;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; display: flex; flex-direction: column; overflow: hidden; }
+header {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--bg-2);
+}
+.brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; color: var(--brass); }
+.brand small { color: var(--muted); font-size: 12px; }
+.progress { display: flex; align-items: center; gap: 10px; min-width: 170px; flex: 1 1 200px; max-width: 320px; }
+.bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--brass), #f0d79d); transition: width .4s; }
+.progress span { font-family: var(--font-display); font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+.primary { padding: 8px 14px; border-radius: 8px; border: 0; background: var(--brass); color: var(--bg); font: 700 13px var(--font-display); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.ghost { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 600 13px var(--font-body); cursor: pointer; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 12px var(--font-body); cursor: pointer; }
+.chip[aria-pressed="false"] { opacity: .4; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.search { flex: 0 1 220px; min-width: 140px; }
+input[type="text"], input[type="search"], input[type="date"], select {
+  width: 100%; box-sizing: border-box; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 13px var(--font-body);
+}
+.sr { position: absolute; left: -9999px; }
+.views { display: flex; gap: 3px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.views a { padding: 5px 14px; border-radius: 6px; color: var(--muted); text-decoration: none; font: 600 13px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.views a[aria-current="page"] { background: var(--brass); color: var(--bg); }
+main { flex: 1; display: flex; min-height: 0; }
+
+/* Dex */
+#dex { flex: 1; min-width: 0; overflow-y: auto; padding-block: 16px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; }
+#dex h2 { font: 600 12px var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 6px 0 10px; display: flex; justify-content: space-between; gap: 12px; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--bg-2); display: flex; flex-direction: column; gap: 6px; }
+.tile b { font: 700 22px var(--font-display); font-variant-numeric: tabular-nums; }
+.tile span { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.gaps { border: 1px solid var(--line); border-left: 3px solid var(--gap); border-radius: 10px; padding: 10px 12px; margin-bottom: 18px; background: var(--bg-2); display: flex; flex-direction: column; gap: 6px; }
+.gaps strong { font: 600 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--gap); }
+.gaps button { all: unset; cursor: pointer; color: var(--ink); line-height: 1.45; }
+.gaps button:hover { text-decoration: underline; }
+.gaps button:focus-visible { outline: 2px solid var(--brass); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 8px; margin-bottom: 22px; }
+.card { display: flex; flex-direction: column; gap: 5px; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
+.card:hover { border-color: var(--muted); }
+.card .no { font: 600 11px var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; align-items: center; letter-spacing: .05em; }
+.card .nm { font-weight: 600; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+.card .meta { font-size: 11.5px; color: var(--muted); }
+.card .foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.card.st0 .nm { color: var(--muted); }
+.card.st0.far { opacity: .55; }
+.card.st4 { border-color: var(--brass); background: linear-gradient(180deg, var(--brass-soft), var(--bg-2) 70%); }
+.card.st3 { border-color: rgba(217, 180, 108, .55); }
+.card.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+.status { font: 600 10.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.status.on { color: var(--brass); }
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 10px; height: 4px; border-radius: 2px; background: var(--line); }
+.pips i.f { background: var(--brass); }
+.entry-no { font-family: var(--font-display); color: var(--brass); font-variant-numeric: tabular-nums; }
+
+/* Dex device */
+#dex { display: flex; overflow: hidden; padding-block: 14px; }
+.device { flex: 1; min-width: 0; display: flex; flex-direction: column; border-radius: 18px; background: linear-gradient(160deg, #26324f, #151c2e); border: 2px solid #3a4870; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 12px 32px rgba(0, 0, 0, .45); }
+.dev-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 2px solid #0c1220; box-shadow: 0 1px 0 #3a4870; }
+.led { width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+.dev-title { margin-left: 6px; font: 700 13px var(--font-display); letter-spacing: .22em; text-transform: uppercase; color: var(--brass); }
+.dev-count { margin-left: auto; font: 600 12px var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: .05em; }
+.dev-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; padding: 14px; }
+.screen {
+  --screen: #0c1a21; min-height: 0; overflow-y: auto; border-radius: 10px; border: 3px solid #080c16;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 3px), var(--screen);
+  box-shadow: inset 0 0 0 1px #3a4870, inset 0 0 28px rgba(0, 0, 0, .55);
+}
+.viewer aside h2 { display: block; margin: 0; font: 600 24px var(--font-display); letter-spacing: .01em; text-transform: none; color: var(--ink); }
+.viewer aside { width: auto; border: 0; background: transparent; max-height: none; padding: 16px; overflow: visible; }
+.listhead { position: sticky; top: 0; z-index: 1; background: var(--screen); padding: 10px 10px 8px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #1c3039; }
+.mini { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); }
+.mini b { color: var(--ink); font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.ltabs { display: flex; gap: 4px; }
+.ltabs button { flex: 1; padding: 6px; border-radius: 6px; border: 1px solid #23404a; background: transparent; color: var(--muted); font: 600 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.ltabs button[aria-pressed="true"] { background: #15303a; color: var(--ink); border-color: var(--sweep); }
+.dexlist { list-style: none; margin: 0; padding: 6px; }
+.row { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 44px 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 6px; cursor: pointer; font: 500 13.5px var(--font-display); color: var(--ink); }
+.row:hover { background: rgba(255, 255, 255, .05); }
+.row:focus-visible { outline: 2px solid var(--brass); }
+.row .no { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+.row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row.st0 .nm { color: var(--muted); }
+.row.far { opacity: .45; }
+.row.sel { background: var(--brass); color: var(--bg); }
+.row.sel .no, .row.sel .nm { color: var(--bg); }
+.row.sel .pips i { background: rgba(14, 19, 32, .25); }
+.row.sel .pips i.f { background: var(--bg); }
+.row .ic svg { display: block; }
+.dev-controls { display: flex; gap: 8px; align-items: center; padding: 0 16px 14px; }
+.padbtn { width: 40px; height: 30px; border-radius: 8px; background: #0f1626; border: 1px solid #3a4870; color: var(--ink); cursor: pointer; font-size: 12px; }
+.padbtn:active { transform: translateY(1px); }
+.portrait {
+  height: 132px; border-radius: 10px; display: grid; place-items: center; border: 1px solid #1c3039;
+  background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, .07), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 16px);
+}
+.portrait svg { filter: drop-shadow(0 0 14px currentColor); }
+.portrait.dim svg { opacity: .35; filter: none; }
+
+/* Map */
+#board { flex: 1; min-width: 0; position: relative; background: radial-gradient(ellipse at 50% 40%, #16203a 0%, var(--bg) 70%); }
+#board svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.hint { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 12px; color: var(--muted); font-size: 12px; pointer-events: none; display: flex; flex-direction: column; gap: 2px; }
+.hublink { stroke: var(--brass); stroke-opacity: .28; stroke-width: 2.5; }
+.tlink { stroke-width: 1; stroke-opacity: .22; }
+.tolink { stroke-width: 1; stroke-opacity: .16; stroke-dasharray: 4 4; }
+.node { cursor: pointer; }
+.node text { font-family: var(--font-body); fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
+.hub text { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .03em; }
+.tech text { font-size: 11px; fill: var(--muted); }
+.zoomed-out .tech text { display: none; }
+.zoomed-out .tech.hl text, .zoomed-out .tech.sel text { display: block; }
+#board { background: radial-gradient(ellipse at 50% 30%, #1a2650 0%, #0b1020 62%, #060912 100%); }
+.star { fill: #d6deff; }
+.chan { stroke: #070b16; stroke-width: 8; stroke-linecap: round; }
+.hublink { stroke: #34436b; stroke-opacity: 1; stroke-width: 3; stroke-linecap: round; }
+.hublink.lit { stroke: var(--brass); filter: drop-shadow(0 0 5px var(--brass)); }
+.tlink { stroke-opacity: .28; stroke-width: 1.6; stroke-linecap: round; }
+.tlink.lit { stroke-opacity: .95; filter: drop-shadow(0 0 3px currentColor); }
+.tolink.lit { stroke-opacity: .6; }
+.hub { color: var(--brass); }
+.aura { fill: none; stroke: var(--brass); stroke-opacity: .14; stroke-dasharray: 2 6; }
+.socket { fill: #0a1020; stroke: currentColor; stroke-width: 1.5; stroke-opacity: .35; }
+.hub .socket { stroke-width: 2; }
+.reach .socket { stroke-opacity: .95; }
+.learned .socket { stroke-opacity: 1; }
+.orb { opacity: 0; transition: opacity .4s; }
+.reach .orb { opacity: .25; }
+.learned .orb { opacity: 1; filter: drop-shadow(0 0 7px currentColor); }
+.glyph { fill: #0a1020; opacity: 0; }
+.learned .glyph { opacity: .8; }
+.hub.learned .aura { stroke-opacity: .45; }
+.tech.learned text { fill: var(--ink); }
+.hub.locked { opacity: .6; }
+.tech.locked { opacity: .55; }
+.cursor { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.sel .cursor { opacity: 1; animation: spin 8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sel .cursor { animation: none; } .orb { transition: none; } }
+.focus .hublink, .focus .tlink, .focus .tolink { stroke-opacity: .05; }
+.focus .node { opacity: .25; }
+.focus .node.hl, .focus .node.sel { opacity: 1; }
+.focus .tlink.hl { stroke-opacity: .9; stroke-width: 1.5; }
+.focus .tolink.hl { stroke-opacity: .7; }
+.focus .hublink.hl { stroke-opacity: .7; }
+.t-sub { color: var(--sub); } .t-sweep { color: var(--sweep); } .t-pass { color: var(--pass); } .t-move { color: var(--move); } .t-escape { color: var(--escape); }
+
+/* Panel */
+aside {
+  width: 360px; flex: none; border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+aside h2 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 600; text-wrap: balance; }
+.kind { font: 600 11px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tag { padding: 2px 8px; border-radius: 4px; border: 1px solid currentColor; }
+aside p { margin: 0; line-height: 1.5; }
+aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stagebox { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-2); }
+.stagehead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.stagehead b { font: 700 16px var(--font-display); letter-spacing: .04em; color: var(--brass); }
+.stagebox .next { color: var(--muted); font-size: 13px; }
+.qlog { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.qlog button { padding: 8px 4px; border-radius: 8px; border: 1px solid var(--brass); background: transparent; color: var(--brass); font: 600 12.5px var(--font-body); cursor: pointer; }
+.qlog button:hover { background: var(--brass-soft); }
+.today { font-size: 12.5px; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.linkbtn { all: unset; cursor: pointer; color: var(--muted); text-decoration: underline; font-size: 12.5px; }
+.linkbtn:focus-visible { outline: 2px solid var(--brass); }
+.basesel { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.basesel select { width: auto; flex: 1; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.links button { border: 1px solid var(--line); background: var(--bg-2); color: var(--ink); border-radius: 6px; padding: 4px 9px; font: 13px var(--font-body); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.links button.is-hit { border-color: var(--brass); }
+.links button:hover { background: var(--line); }
+.score { display: flex; flex-direction: column; gap: 8px; }
+.srow { display: grid; grid-template-columns: 92px 1fr 44px; gap: 10px; align-items: center; font-size: 13px; }
+.srow .sbar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.srow .sbar i { display: block; height: 100%; background: var(--brass); }
+.srow.gap { color: var(--gap); }
+.srow.gap .sbar { background: rgba(242, 118, 109, .25); }
+.srow span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); line-height: 1.55; }
+.sessions { display: flex; flex-direction: column; gap: 6px; }
+.sess { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 6px; font-size: 13px; }
+.sess span { color: var(--muted); }
+.legend { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.legend svg { width: 18px; height: 18px; }
+
+/* Log sheet */
+.overlay { position: fixed; inset: 0; background: rgba(5, 8, 15, .6); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.sheet { width: min(560px, 100%); max-height: 100%; overflow: hidden; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.sheet header { border: 0; background: transparent; padding: 16px 18px 8px; justify-content: space-between; }
+.sheet h2 { margin: 0; font: 700 18px var(--font-display); letter-spacing: .05em; text-transform: uppercase; color: var(--brass); }
+.sheet .body { padding: 4px 18px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.sheet footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+.results { display: flex; flex-direction: column; gap: 2px; }
+.results button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 6px; display: flex; gap: 8px; align-items: center; }
+.results button:hover, .results button:focus-visible { background: var(--line); }
+.picked { display: flex; flex-direction: column; gap: 8px; }
+.prow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.prow .nm { font-weight: 600; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.prow .ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; grid-column: 1 / -1; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 5px 10px; font: 600 12px var(--font-body); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--brass); color: var(--bg); }
+.stepper { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.stepper button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.stepper b { color: var(--ink); min-width: 14px; text-align: center; font-variant-numeric: tabular-nums; }
+.x { all: unset; cursor: pointer; color: var(--muted); padding: 2px 6px; }
+.x:focus-visible { outline: 2px solid var(--brass); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-weight: 600; z-index: 30; }
+@media (max-width: 760px) {
+  main { flex-direction: column; }
+  aside { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 46%; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .search { flex: 1 1 100%; }
+  .progress { max-width: none; }
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #dex { overflow-y: auto; }
+  .dev-body { grid-template-columns: minmax(0, 1fr); }
+  .viewer { max-height: 60vh; }
+  .listscr { max-height: 70vh; }
+  .dev-top .dev-count { display: none; }
+  .overlay { align-items: flex-end; padding: 0; }
+  .sheet { border-radius: 14px 14px 0 0; max-height: 92%; }
+}
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+
+/* Phone app layout */
+.tabbar, .backbar { display: none; }
+.listsearch { font-size: 13px; }
+button { -webkit-tap-highlight-color: transparent; }
+@media (max-width: 760px) {
+  header { padding-block: 10px; gap: 8px 14px; flex-wrap: nowrap; }
+  header .brand small, header .views, #openLog, header .search, header .filters { display: none; }
+  .brand h1 { font-size: 17px; }
+  .progress { flex: 1 1 auto; min-width: 0; max-width: none; }
+  #dex { padding: 0; overflow: hidden; }
+  .device { border-radius: 0; border: 0; box-shadow: none; background: transparent; }
+  .dev-top, .dev-controls, .viewer { display: none; }
+  .dev-body { display: block; padding: 0; height: 100%; }
+  .listscr { max-height: none; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .listhead { padding: 10px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); }
+  .listhead .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px; }
+  .listhead .filters::-webkit-scrollbar { display: none; }
+  .listhead .chip { flex: none; min-height: 34px; }
+  .dexlist { padding: 4px max(6px, env(safe-area-inset-right, 0px)) 16px max(6px, env(safe-area-inset-left, 0px)); }
+  .row { padding: 12px 10px; font-size: 15px; grid-template-columns: 46px 18px minmax(0, 1fr) auto; }
+  input[type="search"], input[type="date"], input[type="text"], select, .listsearch { font-size: 16px; }
+  .hint { display: none; }
+  main > aside { display: none; }
+  body.v-progress main > aside { display: flex; flex: 1; width: auto; max-height: none; border: 0; }
+  body.detail main > aside {
+    display: flex; position: fixed; inset: 0; z-index: 15; width: auto; max-height: none; border: 0;
+    padding-top: calc(20px + env(safe-area-inset-top, 0px)); padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+  .backbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    position: sticky; top: calc(-20px - env(safe-area-inset-top, 0px)); z-index: 2;
+    margin: calc(-20px - env(safe-area-inset-top, 0px)) -16px 0; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+    background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .backbar button { all: unset; cursor: pointer; color: var(--brass); font: 600 16px var(--font-display); padding: 8px 8px 8px 0; min-height: 28px; }
+  .backbar button:focus-visible { outline: 2px solid var(--brass); }
+  .qlog button { min-height: 46px; font-size: 14px; }
+  .links button { min-height: 36px; font-size: 14px; }
+  .linkbtn { padding: 6px 0; }
+  .portrait { height: 110px; }
+  .tabbar {
+    display: grid; grid-template-columns: repeat(4, 1fr); align-items: end; flex: none;
+    background: var(--bg-2); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px));
+  }
+  .tabbar button { all: unset; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 10px; font: 600 11px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); cursor: pointer; }
+  .tabbar button:focus-visible { outline: 2px solid var(--brass); }
+  .tabbar button[aria-current="page"] { color: var(--brass); }
+  .tabbar svg { width: 22px; height: 22px; }
+  .tabbar .plus { width: 46px; height: 46px; margin-top: -18px; border-radius: 50%; background: var(--brass); color: var(--bg); display: grid; place-items: center; box-shadow: 0 6px 16px rgba(0, 0, 0, .45); }
+  .tabbar .plus svg { width: 24px; height: 24px; }
+  .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .seg button { padding: 10px 14px; font-size: 13.5px; }
+  .stepper button { width: 38px; height: 38px; font-size: 18px; }
+  .x { padding: 8px 10px; font-size: 16px; }
+  .results button { padding: 10px 8px; font-size: 15px; }
+}
+</style>
+
+<header>
+  <div class="brand">
+    <h1>Grappling Dex</h1>
+    <small>Log what you train. Move every technique from Seen to Mastered.</small>
+  </div>
+  <nav class="views" aria-label="View">
+    <a href="#dex" id="tab-dex">Dex</a>
+    <a href="#map" id="tab-map">Map</a>
+  </nav>
+  <button class="primary" id="openLog">Log session</button>
+  <div class="progress" title="Dex completion: every stage reached counts">
+    <div class="bar"><i id="bar"></i></div>
+    <span id="count">0% complete</span>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="search">
+    <label for="find" class="sr">Find a technique or position</label>
+    <input id="find" type="search" list="names" placeholder="Find armbar, saddle…" autocomplete="off">
+    <datalist id="names"></datalist>
+  </div>
+</header>
+<main>
+  <div id="dex"></div>
+  <div id="board" hidden>
+    <svg id="svg" role="img" aria-label="Skill map of BJJ positions and techniques"></svg>
+    <div class="hint"><span>Drag to pan, scroll or pinch to zoom.</span><span>Zoom in to read technique names.</span></div>
+  </div>
+  <aside id="panel" aria-live="polite"></aside>
+</main>
+<nav class="tabbar" aria-label="Main">
+  <button data-v="dex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Dex</button>
+  <button data-v="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="7" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.3 7.2 10.6 16M16.8 8.6l-3.6 7.3M7.5 6.2l9 .6"/></svg>Map</button>
+  <button data-log aria-label="Log a session"><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>Log</button>
+  <button data-v="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20V12M12 20V6M19 20v-9"/></svg>Progress</button>
+</nav>
+<div class="overlay" id="logSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+    <header><h2 id="logTitle">Log a session</h2><button class="x" id="closeLog" aria-label="Close">✕</button></header>
+    <div class="body">
+      <label class="field" for="logDate">Date<input type="date" id="logDate"></label>
+      <label class="field" for="logSearch">Add what you trained<input type="search" id="logSearch" placeholder="Type a move: triangle, knee slice…" autocomplete="off"></label>
+      <div class="results" id="logResults"></div>
+      <div id="logRecent"></div>
+      <div class="picked" id="logPicked"></div>
+    </div>
+    <footer><span class="status" id="logCount">Nothing added yet</span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="sr" id="sync" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const TYPES = {
+  sub:    { label: "Submission", plural: "Submissions", sym: d3.symbolCircle },
+  sweep:  { label: "Sweep", plural: "Sweeps", sym: d3.symbolTriangle },
+  pass:   { label: "Guard pass", plural: "Guard passes", sym: d3.symbolSquare },
+  move:   { label: "Transition", plural: "Transitions", sym: d3.symbolDiamond },
+  escape: { label: "Escape", plural: "Escapes", sym: d3.symbolWye }
+};
+const TIERS = { stand: "Standing", guard: "Guard · bottom", leg: "Leg entanglement", pin: "Pin · top", dom: "Dominant · top" };
+
+const HUBS = [
+  ["standing","Standing","stand",760,70],
+  ["closed","Closed guard","guard",180,330],
+  ["collar","Collar-sleeve","guard",380,240],
+  ["spider","Spider guard","guard",110,540],
+  ["lasso","Lasso guard","guard",300,630],
+  ["dlr","De La Riva","guard",530,470],
+  ["rdlr","Reverse DLR","guard",640,660],
+  ["butterfly","Butterfly","guard",770,300],
+  ["xguard","X-guard","guard",920,450],
+  ["half","Half guard","guard",1190,300],
+  ["kneeShield","Knee shield","guard",1400,220],
+  ["deepHalf","Deep half","guard",1380,500],
+  ["kguard","K-guard","leg",400,820],
+  ["slx","Single leg X / straight ashi","leg",1000,690],
+  ["outsideAshi","Outside ashi","leg",1220,800],
+  ["saddle","Saddle (inside sankaku)","leg",820,880],
+  ["crossAshi","Cross ashi","leg",1040,960],
+  ["fifty","50-50","leg",600,940],
+  ["backside50","Back-side 50-50","leg",420,1030],
+  ["truck","Truck","pin",130,960],
+  ["topHalf","Top half guard","pin",1340,1100],
+  ["side","Side control","pin",980,1200],
+  ["kesa","Kesa gatame","pin",1200,1320],
+  ["kob","Knee on belly","pin",760,1190],
+  ["ns","North-south","pin",560,1250],
+  ["turtle","Turtle","pin",200,1170],
+  ["crucifix","Crucifix","pin",320,1350],
+  ["mount","Mount","dom",900,1440],
+  ["sMount","High / S-mount","dom",1150,1490],
+  ["techMount","Technical mount","dom",680,1470],
+  ["back","Back","dom",440,1490]
+].map(([id,name,tier,x,y]) => ({ id, name, tier, x, y, fx: x, fy: y, hub: true }));
+
+const HUB_LINKS = [
+  ["standing","closed"],["standing","collar"],["standing","dlr"],["standing","butterfly"],["standing","turtle"],
+  ["closed","collar"],["closed","half"],["collar","spider"],["spider","lasso"],["collar","dlr"],["dlr","rdlr"],
+  ["dlr","xguard"],["dlr","slx"],["dlr","fifty"],["rdlr","fifty"],["rdlr","saddle"],["butterfly","xguard"],
+  ["butterfly","slx"],["butterfly","saddle"],["xguard","slx"],["slx","saddle"],["slx","outsideAshi"],
+  ["slx","crossAshi"],["slx","fifty"],["saddle","crossAshi"],["saddle","fifty"],["fifty","backside50"],
+  ["kguard","saddle"],["kguard","crossAshi"],["half","kneeShield"],["half","deepHalf"],["deepHalf","slx"],
+  ["half","slx"],["topHalf","side"],["topHalf","mount"],["side","kob"],["side","ns"],["side","kesa"],
+  ["side","mount"],["kob","mount"],["side","crucifix"],["turtle","back"],["turtle","crucifix"],["turtle","truck"],
+  ["truck","back"],["mount","sMount"],["mount","techMount"],["techMount","back"],["back","mount"]
+];
+
+// [id, name, type, works-from positions, leads-to position, note, gi-only]
+const TECHS = [
+  ["armbar","Armbar","sub",["closed","kneeShield","sMount","techMount","side","kob","ns","back","crucifix"],null,"Elbow lock. Also flying from standing. Chains with triangle and omoplata from guard."],
+  ["triangle","Triangle choke","sub",["closed","kneeShield","spider","lasso","collar","sMount"],null,"One arm in, one out. From S-mount it is the mounted triangle."],
+  ["kimura","Kimura","sub",["closed","half","kneeShield","side","ns","topHalf"],null,"Shoulder lock. Pairs with the hip bump sweep from closed guard."],
+  ["omoplata","Omoplata","sub",["closed","spider","lasso","collar"],null,"Shoulder lock with the legs. If they roll out, take top."],
+  ["americana","Americana","sub",["closed","side","mount"],null,"Bent-arm shoulder lock, near arm pinned to the mat."],
+  ["guillotine","Guillotine","sub",["closed","butterfly","turtle","standing"],null,"Front choke when the head drops. Arm-in version from butterfly."],
+  ["armTriangle","Arm triangle","sub",["mount","side","topHalf"],null,"Head-and-arm choke. Walk to the far side to finish."],
+  ["ezekiel","Ezekiel choke","sub",["closed","mount"],null,"Sleeve choke. Works from inside their closed guard too."],
+  ["crossCollar","Cross collar choke","sub",["closed","mount","sMount"],null,"Deep first grip, then the second.",true],
+  ["bowArrow","Bow and arrow choke","sub",["back","side"],null,"Collar grip plus pant grip, stretch them out.",true],
+  ["baseballBat","Baseball bat choke","sub",["side","kob"],null,"Both hands on the collar, spin to finish.",true],
+  ["paperCutter","Paper cutter choke","sub",["side"],null,"Lapel across the throat from side control.",true],
+  ["loopChoke","Loop choke","sub",["closed"],null,"When their head is low in your guard.",true],
+  ["clockChoke","Clock choke","sub",["turtle"],null,"Collar choke, walk your legs around like a clock hand.",true],
+  ["rnc","Rear naked choke","sub",["back"],null,"The main back finish."],
+  ["shortChoke","Short choke","sub",["back"],null,"When they defend the full RNC."],
+  ["nsChoke","North-south choke","sub",["ns"],null,"Arm-in choke from north-south."],
+  ["darce","D'Arce choke","sub",["turtle","standing"],null,"Front headlock choke, arm threaded under the arm."],
+  ["anaconda","Anaconda choke","sub",["turtle","standing"],null,"Front headlock choke, roll to finish."],
+  ["peruvian","Peruvian necktie","sub",["turtle"],null,"Front headlock choke with the legs over the back."],
+  ["gogoplata","Gogoplata","sub",["closed"],null,"Shin across the throat from rubber guard or overhook guard."],
+  ["kesaLock","Kesa armlock","sub",["kesa"],null,"Trap their arm with your leg and straighten it."],
+  ["headArm","Head-and-arm choke","sub",["kesa"],null,"Choke from the scarf hold."],
+  ["crucifixChoke","Crucifix neck crank","sub",["crucifix"],null,"Neck crank or choke with both arms trapped."],
+  ["electricChair","Electric chair","sub",["half","truck"],null,"Hip and groin stretch. Called banana split from the truck."],
+  ["twister","Twister","sub",["truck"],null,"Spinal lock. Banned in many rulesets."],
+  ["straightAnkle","Straight ankle lock","sub",["slx","outsideAshi","crossAshi","fifty","deepHalf"],null,"Achilles lock. The most widely legal leg lock."],
+  ["outsideHeel","Outside heel hook","sub",["slx","outsideAshi","saddle","fifty","backside50"],null,"Check your ruleset before using heel hooks."],
+  ["insideHeel","Inside heel hook","sub",["saddle","crossAshi","fifty","kguard"],null,"Highest-percentage finish from the saddle. Check your ruleset."],
+  ["toeHold","Toe hold","sub",["slx","outsideAshi","saddle","crossAshi","fifty","backside50","topHalf"],null,"Figure-four on the foot."],
+  ["kneebar","Kneebar","sub",["slx","outsideAshi","saddle","crossAshi","fifty","backside50"],null,"Slide up the leg when they turn away or stand."],
+  ["estima","Estima lock","sub",["slx","deepHalf","topHalf"],null,"Foot lock with their foot pinned at your hip."],
+  ["calfSlicer","Calf slicer","sub",["saddle","truck","topHalf"],null,"Compression lock behind the knee."],
+
+  ["scissor","Scissor sweep","sweep",["closed"],"mount","Collar and sleeve grip, cut the legs."],
+  ["hipBump","Hip bump sweep","sweep",["closed"],"mount","When they posture up. Chains to kimura and guillotine."],
+  ["flower","Flower sweep","sweep",["closed"],"mount","Pendulum swing with arm and leg control."],
+  ["omoplataSweep","Omoplata sweep","sweep",["closed","spider","lasso"],"side","When they roll out of the omoplata."],
+  ["butterflySweep","Butterfly sweep","sweep",["butterfly"],"mount","Underhook, arm control, elevate with the hook."],
+  ["oldSchool","Old school sweep","sweep",["half"],"side","Underhook and grab the far ankle."],
+  ["kneeLever","Knee lever","sweep",["half","rdlr"],"side","Backup when the old school is blocked."],
+  ["wrestleUp","Wrestle-up","sweep",["half","kneeShield"],"side","Come up on the underhook to a single leg."],
+  ["waiter","Waiter sweep","sweep",["deepHalf"],"side","Lift the leg and come up."],
+  ["homer","Homer Simpson sweep","sweep",["deepHalf"],"side","Roll under to come up on top."],
+  ["techStandup","Technical stand-up","sweep",["xguard","slx"],"standing","Kick the hooks, stand up in base holding the leg."],
+  ["overhead","Overhead sweep","sweep",["xguard"],"side","When they lean forward."],
+  ["kickOver","Kick-over sweep","sweep",["slx"],"standing","Kick the hip and come up on the leg."],
+  ["tripod","Tripod sweep","sweep",["dlr"],"standing","Foot on the hip, pull the ankle."],
+  ["sickle","Sickle sweep","sweep",["dlr"],"side","Chop the far ankle."],
+  ["spiderSweep","Spider sweep","sweep",["spider"],"side","Sleeve grips, off-balance over your head.",true],
+  ["lassoSweep","Lasso sweep","sweep",["lasso"],"side","Pull the sleeve, push the hip.",true],
+  ["collarSleeveSweep","Collar-sleeve sweep","sweep",["collar"],"standing","Push the knee, pull the sleeve.",true],
+  ["fiftySweep","50-50 sweep","sweep",["fifty"],"side","Pull their leg and come up on top."],
+
+  ["toreando","Toreando pass","pass",["dlr","spider","lasso","butterfly"],"side","Grip the pants and redirect the legs."],
+  ["kneeSlice","Knee slice","pass",["half","kneeShield","dlr","butterfly"],"side","Cut the knee through with an underhook or crossface."],
+  ["legDrag","Leg drag","pass",["dlr","rdlr"],"side","Pin the legs to one side. Chains to the back."],
+  ["overUnder","Over-under pass","pass",["closed","butterfly"],"side","Pressure pass. Stack and walk around."],
+  ["doubleUnder","Double under pass","pass",["closed"],"side","Stack them and pass around a leg."],
+  ["bodyLock","Body lock pass","pass",["butterfly","half"],"side","Hug the hips and flatten them."],
+  ["xPass","X-pass","pass",["butterfly"],"side","Push the knees, step around."],
+  ["smash","Smash pass","pass",["butterfly"],"side","Fold the legs to one side."],
+  ["stackPass","Stack pass","pass",["closed","spider","lasso"],"side","Also counters the triangle."],
+  ["floatPass","Float pass","pass",["topHalf"],"side","Flatten them and float your hips free."],
+  ["mountPass","Mount pass","pass",["topHalf"],"mount","Slide the knee through to mount."],
+  ["backstep","Backstep","pass",["topHalf","rdlr"],"saddle","Turn away into a leg entanglement or side control."],
+
+  ["armDrag","Arm drag","move",["closed","butterfly","standing"],"back","Drag the arm across and climb to the back."],
+  ["berimbolo","Berimbolo","move",["dlr"],"back","Invert under them to take the back."],
+  ["kissDragon","Kiss of the dragon","move",["dlr","rdlr"],"back","Inverted back take."],
+  ["matrix","Matrix","move",["kguard"],"back","Back take from K-guard."],
+  ["dogfight","Dogfight back take","move",["half"],"back","Come up on the underhook, go behind."],
+  ["giftWrap","Gift wrap","move",["mount"],"back","Wrap their arm around their neck, roll to the back."],
+  ["seatbelt","Seatbelt and hooks","move",["turtle"],"back","Get the seatbelt grip, then the hooks."],
+  ["backDoor","Back door","move",["deepHalf"],"back","Escape out the back of deep half."],
+  ["imanari","Imanari roll","move",["standing"],"saddle","Rolling entry to the saddle."],
+  ["doubleLeg","Double leg","move",["standing"],"side","Takedown. Usually lands in their guard or side control."],
+  ["singleLeg","Single leg","move",["standing"],"side","Takedown off one leg."],
+  ["osoto","Osoto gari","move",["standing"],"side","Judo reap."],
+  ["snapDown","Snap down","move",["standing"],"turtle","Front headlock, then go behind or choke."],
+
+  ["upa","Upa (bridge and roll)","escape",["mount","side","kesa"],null,"Trap an arm and leg, bridge over. You end on top."],
+  ["elbowKnee","Elbow-knee escape","escape",["mount"],"half","Shrimp to half or full guard."],
+  ["heelDrag","Heel drag escape","escape",["mount"],"half","Drag your heel free to half guard."],
+  ["shrimp","Shrimp to guard","escape",["side","kob"],"closed","Frame, hip out, knee in."],
+  ["ghost","Ghost escape","escape",["side"],"turtle","Slip under and out."],
+  ["shoulderMat","Shoulder-to-mat escape","escape",["back"],"closed","Get your shoulders down, turn in."],
+  ["granby","Granby roll","escape",["turtle"],"closed","Shoulder roll back to guard."],
+  ["sitOut","Sit-out","escape",["turtle"],null,"Wrestling reversal to get on top."]
+].map(([id,name,type,from,to,note,gi]) => ({ id, name, type, from, to, note, gi: !!gi, hub: false }));
+
+const hubById = new Map(HUBS.map(h => [h.id, h]));
+const nodeById = new Map([...HUBS, ...TECHS].map(n => [n.id, n]));
+const ALL = [...HUBS, ...TECHS];
+
+const CHAINS = [
+  ["hipBump","kimura","guillotine"], ["armbar","triangle","omoplata"], ["crossCollar","armbar"], ["scissor","flower"],
+  ["omoplata","omoplataSweep"], ["oldSchool","kneeLever"], ["dogfight","wrestleUp"], ["butterflySweep","techStandup"],
+  ["berimbolo","rnc"], ["toreando","kneeSlice"], ["kneeSlice","backstep"], ["legDrag","rnc"], ["americana","armbar","triangle"],
+  ["giftWrap","rnc"], ["rnc","armbar"], ["rnc","bowArrow"], ["snapDown","darce","anaconda","guillotine"],
+  ["straightAnkle","kickOver"], ["upa","elbowKnee"], ["insideHeel","outsideHeel"], ["toeHold","kneebar"], ["seatbelt","rnc"]
+];
+const entryNo = new Map([
+  ...TECHS.map((t, i) => [t.id, "#" + String(i + 1).padStart(3, "0")]),
+  ...HUBS.map((h, i) => [h.id, "P" + String(i + 1).padStart(2, "0")])
+]);
+function relatedMoves(t) {
+  return TECHS.filter(o => o !== t)
+    .map(o => ({ o, s: o.from.filter(h => t.from.includes(h)).length + (o.type === t.type ? 0.5 : 0) }))
+    .filter(x => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 8).map(x => x.o.id);
+}
+function combos(t) {
+  const out = new Set();
+  CHAINS.forEach(c => { if (c.includes(t.id)) c.forEach(id => { if (id !== t.id) out.add(id); }); });
+  return [...out];
+}
+
+// ---------- Progress model ----------
+// A session: { id, d: "YYYY-MM-DD", items: { moveId: { k: "seen"|"drilled"|"hit", n: hits } } }
+// base: { moveId: stage } — a starting stage for things you already know.
+const STAGES = ["Unseen", "Seen", "Drilled", "Hit", "Mastered"];
+const MAXFROM = Math.max(...TECHS.map(t => t.from.length));
+const MAXCMB = Math.max(...TECHS.map(t => combos(t).length));
+const KINDS = { seen: "Taught", drilled: "Drilled", hit: "Hit live" };
+const KRANK = { seen: 1, drilled: 2, hit: 3 };
+const RULES = { drillSessions: 2, masterHits: 5, masterSessions: 3 };
+let data = { v: 2, sessions: [], base: {} };
+const KEY = "grappling-dex-v2", OLD_KEY = "grappling-dex-learned-v1";
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (saved && saved.v === 2) data = saved;
+  else {
+    const old = JSON.parse(localStorage.getItem(OLD_KEY) || "[]");
+    old.forEach(id => { const n = nodeById.get(id); if (n && !n.hub) data.base[id] = 2; });
+  }
+} catch (e) {}
+
+function stats(id) {
+  let seenS = 0, drillS = 0, hits = 0, hitS = 0, last = null;
+  for (const s of data.sessions) {
+    const it = s.items[id]; if (!it) continue;
+    seenS++; if (it.k !== "seen") drillS++;
+    if (it.k === "hit") { hits += it.n || 1; hitS++; }
+    if (!last || s.d > last) last = s.d;
+  }
+  return { seenS, drillS, hits, hitS, last };
+}
+function derived(st) {
+  if (st.hits >= RULES.masterHits && st.hitS >= RULES.masterSessions) return 4;
+  if (st.hits >= 1) return 3;
+  if (st.drillS >= RULES.drillSessions) return 2;
+  if (st.seenS >= 1) return 1;
+  return 0;
+}
+let stageCache = new Map();
+function recompute() { stageCache = new Map(TECHS.map(t => [t.id, Math.max(data.base[t.id] || 0, derived(stats(t.id)))])); }
+const stage = id => stageCache.get(id) || 0;
+function nextStep(id) {
+  const s = stage(id), st = stats(id);
+  if (s === 0) return "Log it once (taught, drilled or hit) to mark it Seen.";
+  if (s === 1) { const left = Math.max(1, RULES.drillSessions - st.drillS); return `Drill it in ${left} more session${left > 1 ? "s" : ""} to reach Drilled.`; }
+  if (s === 2) return "Land it once in live rolling to reach Hit.";
+  if (s === 3) {
+    const h = Math.max(0, RULES.masterHits - st.hits), ss = Math.max(0, RULES.masterSessions - st.hitS);
+    const parts = [h ? `${h} more live hit${h > 1 ? "s" : ""}` : "", ss ? `hits in ${ss} more session${ss > 1 ? "s" : ""}` : ""].filter(Boolean);
+    return `For Mastered: ${parts.join(" and ")}.`;
+  }
+  return "Mastered. It works on resisting partners.";
+}
+const pips = s => `<span class="pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= s ? "f" : ""}"></i>`).join("")}</span>`;
+
+// Position scorecard: how much of your game exists here (counted at Hit or better).
+function scorecard(h) {
+  const at = list => ({ have: list.filter(t => stage(t.id) >= 3).length, total: list.length });
+  const rows = [];
+  const attacks = TECHS.filter(t => t.from.includes(h.id) && ["sub", "sweep", "move"].includes(t.type));
+  const passes = TECHS.filter(t => t.from.includes(h.id) && t.type === "pass");
+  const escapes = TECHS.filter(t => t.from.includes(h.id) && t.type === "escape");
+  const waysIn = TECHS.filter(t => t.to === h.id);
+  if (attacks.length) rows.push({ label: "Attacks", ...at(attacks) });
+  if (passes.length) rows.push({ label: "Passes", ...at(passes) });
+  if (escapes.length) rows.push({ label: "Escapes", ...at(escapes) });
+  if (waysIn.length) rows.push({ label: "Ways in", ...at(waysIn) });
+  return rows;
+}
+function hubActive(h) { return TECHS.some(t => (t.from.includes(h.id) || t.to === h.id) && stage(t.id) >= 1); }
+function gaps() {
+  const out = [];
+  HUBS.forEach(h => {
+    if (!hubActive(h)) return;
+    scorecard(h).forEach(r => {
+      if (r.have) return;
+      if (r.label === "Escapes") out.push({ id: h.id, w: 3, text: `No escape from bottom of ${h.name} at Hit yet` });
+      else if (r.label === "Attacks") out.push({ id: h.id, w: 2, text: `No attack from ${h.name} at Hit yet` });
+      else if (r.label === "Passes") out.push({ id: h.id, w: 1, text: `No pass for ${h.name} at Hit yet` });
+    });
+  });
+  return out.sort((a, b) => b.w - a.w).slice(0, 4);
+}
+
+// ---------- Logging ----------
+function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+const fmtDate = iso => new Date(iso + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: iso.slice(0, 4) === todayISO().slice(0, 4) ? undefined : "numeric" });
+function sessionFor(d, create) {
+  let s = data.sessions.find(x => x.d === d);
+  if (!s && create) { s = { id: d + "-" + Math.random().toString(36).slice(2, 7), d, items: {} }; data.sessions.push(s); data.sessions.sort((a, b) => a.d < b.d ? -1 : 1); }
+  return s;
+}
+function addItem(s, id, k, n) {
+  const cur = s.items[id];
+  if (k === "hit") s.items[id] = { k: "hit", n: (cur && cur.k === "hit" ? cur.n || 1 : 0) + (n || 1) };
+  else if (!cur || KRANK[cur.k] < KRANK[k]) s.items[id] = { k };
+}
+function quickLog(id, k) {
+  const before = stage(id);
+  addItem(sessionFor(todayISO(), true), id, k, 1);
+  commit();
+  const after = stage(id);
+  toast(after > before ? `${nodeById.get(id).name} reached ${STAGES[after]}` : `Logged ${KINDS[k].toLowerCase()} for today`);
+}
+function clearToday(id) {
+  const s = sessionFor(todayISO(), false); if (!s) return;
+  delete s.items[id];
+  if (!Object.keys(s.items).length) data.sessions = data.sessions.filter(x => x !== s);
+  commit();
+}
+function commit() { recompute(); refresh(); save(); }
+
+// ---------- Board ----------
+TECHS.forEach((t, i) => {
+  const hs = t.from.map(id => hubById.get(id));
+  t.x = d3.mean(hs, h => h.x) + Math.cos(i * 2.4) * 30;
+  t.y = d3.mean(hs, h => h.y) + Math.sin(i * 2.4) * 30;
+});
+const forceLinks = TECHS.flatMap(t => t.from.map(h => ({ source: t.id, target: h })));
+const sim = d3.forceSimulation(ALL)
+  .force("link", d3.forceLink(forceLinks).id(d => d.id).distance(l => l.source.from && l.source.from.length > 2 ? 40 : 62).strength(.5))
+  .force("charge", d3.forceManyBody().strength(d => d.hub ? -200 : -45))
+  .force("collide", d3.forceCollide(d => d.hub ? 44 : 15))
+  .stop();
+for (let i = 0; i < 400; i++) sim.tick();
+
+let selected = null, hidden = new Set(), view = "dex", listTab = "moves";
+const phoneQuery = window.matchMedia("(max-width: 760px)");
+let isPhone = phoneQuery.matches;
+function reachable(n) {
+  if (n.hub) {
+    if (n.id === "standing") return true;
+    if (HUB_LINKS.some(([a, b]) => (a === n.id && hubActive(hubById.get(b))) || (b === n.id && hubActive(hubById.get(a))))) return true;
+    return TECHS.some(t => t.to === n.id && stage(t.id) >= 2);
+  }
+  return n.from.some(h => h === "standing" || hubActive(hubById.get(h)));
+}
+function mapState(n) {
+  if (n.hub) return TECHS.some(t => (t.from.includes(n.id) || t.to === n.id) && stage(t.id) >= 2) ? "learned" : reachable(n) ? "reach" : "locked";
+  const s = stage(n.id);
+  return s >= 2 ? "learned" : (s === 1 || reachable(n)) ? "reach" : "locked";
+}
+
+const svg = d3.select("#svg");
+const world = svg.append("g");
+const gStars = world.append("g"), gChan = world.append("g");
+const gHub = world.append("g"), gT = world.append("g"), gTo = world.append("g"), gNodes = world.append("g");
+// Orb gradients: a bright core fading into the type colour.
+const defs = svg.append("defs");
+[["hub", "#d9b46c"], ["sub", "#f2766d"], ["sweep", "#4fcbb2"], ["pass", "#6fb2ff"], ["move", "#b58df2"], ["escape", "#a3adc4"]].forEach(([k, c]) => {
+  const g = defs.append("radialGradient").attr("id", "g-" + k).attr("cx", "38%").attr("cy", "35%").attr("r", "70%");
+  g.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff").attr("stop-opacity", .95);
+  g.append("stop").attr("offset", "35%").attr("stop-color", c);
+  g.append("stop").attr("offset", "100%").attr("stop-color", c).attr("stop-opacity", .55);
+});
+// A fixed starfield (seeded, so it looks the same on every load).
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+gStars.selectAll("circle").data(d3.range(320)).join("circle").attr("class", "star")
+  .attr("cx", () => -300 + rnd() * 2100).attr("cy", () => -200 + rnd() * 1950)
+  .attr("r", () => .4 + rnd() * 1.3).attr("opacity", () => .15 + rnd() * .55);
+const hubLinkSel = gHub.selectAll("line").data(HUB_LINKS).join("line").attr("class", "hublink")
+  .attr("x1", d => hubById.get(d[0]).x).attr("y1", d => hubById.get(d[0]).y)
+  .attr("x2", d => hubById.get(d[1]).x).attr("y2", d => hubById.get(d[1]).y);
+const tlinks = TECHS.flatMap(t => t.from.map(h => ({ t, h: hubById.get(h) })));
+const tLinkSel = gT.selectAll("line").data(tlinks).join("line").attr("class", d => "tlink t-" + d.t.type).attr("stroke", "currentColor")
+  .attr("x1", d => d.t.x).attr("y1", d => d.t.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
+const tolinks = TECHS.filter(t => t.to).map(t => ({ t, h: hubById.get(t.to) }));
+const toLinkSel = gTo.selectAll("line").data(tolinks).join("line").attr("class", d => "tolink t-" + d.t.type).attr("stroke", "currentColor")
+  .attr("x1", d => d.t.x).attr("y1", d => d.t.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
+gChan.selectAll("line").data([...HUB_LINKS.map(d => [hubById.get(d[0]), hubById.get(d[1])]), ...tlinks.map(d => [d.t, d.h])]).join("line")
+  .attr("class", "chan").attr("x1", d => d[0].x).attr("y1", d => d[0].y).attr("x2", d => d[1].x).attr("y2", d => d[1].y);
+const oct = r => d3.range(8).map(i => { const a = Math.PI / 8 + i * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r].join(","); }).join(" ");
+const hubSel = gNodes.selectAll("g.hub").data(HUBS).join("g").attr("class", "node hub")
+  .attr("transform", d => `translate(${d.x},${d.y})`).attr("tabindex", 0).attr("role", "button").attr("aria-label", d => d.name);
+hubSel.append("circle").attr("class", "aura").attr("r", 36);
+hubSel.append("circle").attr("class", "socket").attr("r", 22);
+hubSel.append("circle").attr("class", "orb").attr("r", 17).attr("fill", "url(#g-hub)");
+hubSel.append("circle").attr("class", "cursor").attr("r", 29);
+hubSel.append("text").attr("text-anchor", "middle").attr("y", 40).text(d => d.name);
+const techSel = gNodes.selectAll("g.tech").data(TECHS).join("g").attr("class", d => "node tech t-" + d.type)
+  .attr("transform", d => `translate(${d.x},${d.y})`).attr("tabindex", 0).attr("role", "button").attr("aria-label", d => d.name);
+techSel.append("circle").attr("class", "socket").attr("r", 10);
+techSel.append("circle").attr("class", "orb").attr("r", 7.5).attr("fill", d => `url(#g-${d.type})`);
+techSel.append("path").attr("class", "glyph").attr("d", d => d3.symbol(TYPES[d.type].sym, 24)());
+techSel.append("circle").attr("class", "cursor").attr("r", 16);
+techSel.append("text").attr("x", 15).attr("y", 4).text(d => d.name + (d.gi ? " (gi)" : ""));
+gNodes.selectAll(".node")
+  .on("click", (e, d) => { e.stopPropagation(); select(d.id); })
+  .on("keydown", (e, d) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(d.id); } });
+svg.on("click", () => select(null));
+const zoom = d3.zoom().scaleExtent([0.15, 3]).on("zoom", e => { world.attr("transform", e.transform); svg.classed("zoomed-out", e.transform.k < 0.85); });
+svg.call(zoom);
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fit() {
+  const box = svg.node().getBoundingClientRect();
+  const xs = ALL.map(n => n.x), ys = ALL.map(n => n.y);
+  const x0 = d3.min(xs) - 60, x1 = d3.max(xs) + 160, y0 = d3.min(ys) - 40, y1 = d3.max(ys) + 60;
+  const k = Math.min(box.width / (x1 - x0), box.height / (y1 - y0)) || 0.5;
+  svg.call(zoom.transform, d3.zoomIdentity.translate((box.width - (x1 - x0) * k) / 2 - x0 * k, (box.height - (y1 - y0) * k) / 2 - y0 * k).scale(k));
+}
+function focusOn(n) {
+  const box = svg.node().getBoundingClientRect();
+  const k = Math.max(d3.zoomTransform(svg.node()).k, 1.1);
+  svg.transition().duration(reduceMotion ? 0 : 600).call(zoom.transform, d3.zoomIdentity.translate(box.width / 2 - n.x * k, box.height / 2 - n.y * k).scale(k));
+}
+function related(id) {
+  const n = nodeById.get(id), set = new Set([id]);
+  if (!n) return set;
+  if (n.hub) {
+    TECHS.forEach(t => { if (t.from.includes(id) || t.to === id) set.add(t.id); });
+    HUB_LINKS.forEach(([a, b]) => { if (a === id) set.add(b); if (b === id) set.add(a); });
+  } else { n.from.forEach(h => set.add(h)); if (n.to) set.add(n.to); }
+  return set;
+}
+function renderMap() {
+  const rel = selected ? related(selected) : null;
+  svg.classed("focus", !!selected);
+  gNodes.selectAll(".node").attr("display", d => !d.hub && hidden.has(d.type) ? "none" : null).each(function (d) {
+    const s = mapState(d);
+    this.classList.toggle("learned", s === "learned"); this.classList.toggle("reach", s === "reach"); this.classList.toggle("locked", s === "locked");
+    this.classList.toggle("sel", d.id === selected); this.classList.toggle("hl", !!rel && rel.has(d.id));
+  });
+  tLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
+  toLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
+  hubLinkSel.classed("hl", d => !!rel && (d[0] === selected || d[1] === selected));
+  tLinkSel.classed("lit", d => stage(d.t.id) >= 2 && hubActive(d.h));
+  toLinkSel.classed("lit", d => stage(d.t.id) >= 3);
+  hubLinkSel.classed("lit", d => mapState(hubById.get(d[0])) === "learned" && mapState(hubById.get(d[1])) === "learned");
+}
+
+// ---------- Rendering ----------
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const icon = (n, size = 14) => n.hub
+  ? `<svg width="${size}" height="${size}" viewBox="-12 -12 24 24" aria-hidden="true"><polygon points="${oct(10)}" fill="var(--brass)"/></svg>`
+  : `<svg width="${size}" height="${size}" viewBox="-8 -8 16 16" class="t-${n.type}" aria-hidden="true"><path d="${d3.symbol(TYPES[n.type].sym, 80)()}" fill="currentColor"/></svg>`;
+function refresh() {
+  const total = TECHS.length * 4, got = TECHS.reduce((a, t) => a + stage(t.id), 0);
+  document.getElementById("count").textContent = `${Math.round(100 * got / total)}% complete`;
+  document.getElementById("bar").style.width = (100 * got / total) + "%";
+  if (view === "dex") renderDex(); else if (view === "map") renderMap();
+  document.body.classList.toggle("detail", isPhone && !!selected);
+  renderPanel();
+}
+const dexEl = document.getElementById("dex");
+function card(n) {
+  if (n.hub) {
+    const rows = scorecard(n), have = d3.sum(rows, r => r.have), tot = d3.sum(rows, r => r.total);
+    const gap = hubActive(n) && rows.some(r => !r.have && r.label !== "Ways in");
+    return `<button class="card ${hubActive(n) ? "st3" : "st0" + (reachable(n) ? "" : " far")}${n.id === selected ? " sel" : ""}" data-id="${n.id}" id="card-${n.id}">
+      <span class="no"><span>${entryNo.get(n.id)}</span>${icon(n)}</span><span class="nm">${esc(n.name)}</span>
+      <span class="meta">${TIERS[n.tier]}</span>
+      <span class="foot"><span class="status ${have ? "on" : ""}">${have} / ${tot} at Hit</span>${gap ? `<span class="status" style="color:var(--gap)">Gap</span>` : ""}</span></button>`;
+  }
+  const s = stage(n.id), near = s === 0 && reachable(n);
+  return `<button class="card st${s}${s === 0 && !near ? " far" : ""}${n.id === selected ? " sel" : ""}" data-id="${n.id}" id="card-${n.id}">
+    <span class="no"><span>${entryNo.get(n.id)}</span>${icon(n)}</span>
+    <span class="nm">${esc(n.name)}</span>
+    <span class="meta">${TYPES[n.type].label}${n.gi ? " · gi" : ""} · ${n.from.length} position${n.from.length > 1 ? "s" : ""}</span>
+    <span class="foot"><span class="status ${s ? "on" : ""}">${s ? STAGES[s] : near ? "Nearby" : "Unseen"}</span>${pips(s)}</span></button>`;
+}
+function buildDevice() {
+  dexEl.innerHTML = `<div class="device">
+    <div class="dev-top"><span class="led" style="color:var(--sub)"></span><span class="led" style="color:var(--brass)"></span><span class="led" style="color:var(--sweep)"></span><span class="dev-title">Grappling Dex</span><span class="dev-count" id="devCount"></span></div>
+    <div class="dev-body">
+      <div class="screen viewer" id="viewerSlot"></div>
+      <div class="screen listscr" id="listScr">
+        <div class="listhead"><input type="search" id="listFilter" class="listsearch" placeholder="Search entries" autocomplete="off" aria-label="Search entries"><div class="mini" id="mini"></div>
+          <div class="ltabs"><button data-tab="moves">Moves</button><button data-tab="positions">Positions</button></div></div>
+        <ol class="dexlist" id="dexList"></ol>
+      </div>
+    </div>
+    <div class="dev-controls"><button class="padbtn" id="prevBtn" aria-label="Previous entry">▲</button><button class="padbtn" id="nextBtn" aria-label="Next entry">▼</button><span class="status">Use ↑ ↓ to browse entries</span></div>
+  </div>`;
+  dexEl.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { listTab = b.dataset.tab; selected = null; refresh(); });
+  document.getElementById("prevBtn").onclick = () => nav(-1);
+  document.getElementById("nextBtn").onclick = () => nav(1);
+}
+buildDevice();
+let listQuery = "";
+document.getElementById("listFilter").addEventListener("input", e => { listQuery = e.target.value.trim().toLowerCase(); renderDex(); });
+const currentList = () => (listTab === "moves" ? TECHS.filter(t => !hidden.has(t.type)) : HUBS)
+  .filter(n => !listQuery || n.name.toLowerCase().includes(listQuery) || entryNo.get(n.id).toLowerCase().includes(listQuery));
+function nav(d) {
+  const list = currentList(); if (!list.length) return;
+  const i = list.findIndex(n => n.id === selected);
+  select(list[i < 0 ? 0 : Math.min(list.length - 1, Math.max(0, i + d))].id);
+}
+function row(n) {
+  let s, cls, right;
+  if (n.hub) {
+    const rows = scorecard(n), have = d3.sum(rows, r => r.have), tot = d3.sum(rows, r => r.total);
+    s = hubActive(n) ? 3 : 0; cls = s ? "" : reachable(n) ? "st0" : "st0 far";
+    right = `<span class="status ${have ? "on" : ""}">${have}/${tot}</span>`;
+  } else {
+    s = stage(n.id); cls = `st${s}` + (s === 0 && !reachable(n) ? " far" : "");
+    right = pips(s);
+  }
+  return `<li><button class="row ${cls}${n.id === selected ? " sel" : ""}" data-id="${n.id}" id="row-${n.id}" aria-current="${n.id === selected}">
+    <span class="no">${entryNo.get(n.id)}</span><span class="ic">${icon(n, 14)}</span><span class="nm">${esc(n.name)}</span>${right}</button></li>`;
+}
+function renderDex() {
+  const count = k => TECHS.filter(t => stage(t.id) >= k).length;
+  document.getElementById("devCount").textContent = `${count(1)} seen · ${count(4)} mastered`;
+  document.getElementById("mini").innerHTML = [1, 2, 3, 4].map(k => `<span><b>${count(k)}</b> ${STAGES[k]}</span>`).join("");
+  dexEl.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === listTab)));
+  const list = document.getElementById("dexList");
+  list.innerHTML = currentList().map(row).join("");
+  list.querySelectorAll("[data-id]").forEach(b => b.onclick = () => select(b.dataset.id));
+}
+function renderDexOld() {
+  const techs = TECHS.filter(t => !hidden.has(t.type));
+  const count = k => TECHS.filter(t => stage(t.id) >= k).length;
+  const g = gaps();
+  dexEl.innerHTML = `<div class="summary">${[1, 2, 3, 4].map(k => `<div class="tile"><b>${count(k)}</b><span>${pips(k)} ${STAGES[k]}${k < 4 ? " or better" : ""}</span></div>`).join("")}</div>
+    ${g.length ? `<div class="gaps"><strong>Gaps in your game</strong>${g.map(x => `<button data-id="${x.id}">${esc(x.text)}</button>`).join("")}</div>` : ""}
+    <h2><span>Moves</span><span>${techs.filter(t => stage(t.id) >= 4).length} / ${techs.length} mastered</span></h2>
+    <div class="grid">${techs.map(card).join("")}</div>
+    <h2><span>Positions</span><span>Scored by moves at Hit or better</span></h2>
+    <div class="grid">${HUBS.map(card).join("")}</div>`;
+  dexEl.querySelectorAll("[data-id]").forEach(b => b.onclick = () => select(b.dataset.id));
+}
+const panel = document.getElementById("panel");
+function chip(id) {
+  const n = nodeById.get(id);
+  return `<button data-go="${n.id}" class="${!n.hub && stage(n.id) >= 3 ? "is-hit" : ""}">${icon(n, 12)}${esc(n.name)}${n.hub ? "" : ` ${pips(stage(n.id))}`}</button>`;
+}
+function legend() {
+  return `<div class="legend">${Object.entries(TYPES).map(([k, v]) => `${icon({ type: k }, 18)}<span>${v.label}</span>`).join("")}${icon({ hub: true }, 18)}<span>Position</span></div>`;
+}
+function renderPanel() {
+  const n = selected && nodeById.get(selected);
+  if (!n) {
+    const recent = data.sessions.slice(-6).reverse();
+    panel.innerHTML = `<div class="kind">Grappling Dex</div><h2>Log what you train, watch the dex fill in</h2>
+      <p class="empty">Each move climbs four stages: <b>Seen</b> once it's logged, <b>Drilled</b> after ${RULES.drillSessions} drilling sessions, <b>Hit</b> when you land it live, and <b>Mastered</b> after ${RULES.masterHits} live hits across ${RULES.masterSessions} sessions.</p>
+      <p class="empty">Already know a move? Open its entry and set a starting stage. Positions score how many of their moves you can hit, and flag gaps like a missing escape.</p>
+      <div class="summary">${[1, 2, 3, 4].map(k => `<div class="tile"><b>${TECHS.filter(t => stage(t.id) >= k).length}</b><span>${pips(k)} ${STAGES[k]}${k < 4 ? "+" : ""}</span></div>`).join("")}</div>
+      <button class="primary" id="panelLog">Log a session</button>
+      ${(() => { const g = gaps(); return g.length ? `<div class="gaps"><strong>Gaps in your game</strong>${g.map(x => `<button data-id="${x.id}">${esc(x.text)}</button>`).join("")}</div>` : ""; })()}
+      <h3>Recent sessions</h3>
+      ${recent.length ? `<div class="sessions">${recent.map(s => `<div class="sess"><div><b>${fmtDate(s.d)}</b> <span>· ${Object.keys(s.items).length} moves</span></div><button class="linkbtn" data-del="${s.id}">Remove</button></div>`).join("")}</div>` : `<p class="empty">No sessions yet. Your first log will show up here.</p>`}
+      <h3>Key</h3>${legend()}`;
+    panel.querySelector("#panelLog").onclick = () => openLog();
+    panel.querySelectorAll(".gaps [data-id]").forEach(b => b.onclick = () => select(b.dataset.id));
+    panel.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+      if (b.dataset.armed) { data.sessions = data.sessions.filter(s => s.id !== b.dataset.del); commit(); toast("Session removed"); }
+      else { b.dataset.armed = "1"; b.textContent = "Tap again to remove"; }
+    });
+    return;
+  }
+  if (n.hub) {
+    const rows = scorecard(n), active = hubActive(n);
+    const groups = Object.keys(TYPES).map(k => {
+      const ts = TECHS.filter(t => t.type === k && t.from.includes(n.id));
+      return ts.length ? `<h3>${TYPES[k].plural} from here (${ts.length})</h3><div class="links">${ts.map(t => chip(t.id)).join("")}</div>` : "";
+    }).join("");
+    const arrive = TECHS.filter(t => t.to === n.id);
+    const nb = HUB_LINKS.filter(l => l.includes(n.id)).map(l => l[0] === n.id ? l[1] : l[0]);
+    panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span>Position · ${TIERS[n.tier]}</span></div><h2>${esc(n.name)}</h2>
+      <div class="stagebox"><div class="stagehead"><b>Scorecard</b><span class="status">moves at Hit or better</span></div>
+      <div class="score">${rows.map(r => `<div class="srow ${active && !r.have && r.label !== "Ways in" ? "gap" : ""}"><span>${r.label}</span><span class="sbar"><i style="width:${r.total ? 100 * r.have / r.total : 0}%"></i></span><span>${r.have}/${r.total}</span></div>`).join("")}</div>
+      ${active ? "" : `<p class="next">Log any move from here to start tracking this position.</p>`}</div>
+      ${groups}
+      ${arrive.length ? `<h3>Ways to get here (${arrive.length})</h3><div class="links">${arrive.map(t => chip(t.id)).join("")}</div>` : ""}
+      ${nb.length ? `<h3>Connected positions</h3><div class="links">${nb.map(chip).join("")}</div>` : ""}`;
+  } else {
+    const s = stage(n.id), st = stats(n.id), rel = relatedMoves(n), cmb = combos(n);
+    const today = sessionFor(todayISO(), false), ti = today && today.items[n.id];
+    panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span class="tag t-${n.type}">${TYPES[n.type].label}</span>${n.gi ? "<span>Gi only</span>" : ""}</div>
+      <div class="portrait t-${n.type}${s ? "" : " dim"}"><svg width="96" height="96" viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="3 5"/><path d="${d3.symbol(TYPES[n.type].sym, 900)()}" fill="currentColor"/></svg></div>
+      <h2>${esc(n.name)}</h2><p>${esc(n.note)}</p>
+      <div class="stagebox">
+        <div class="stagehead"><b>${STAGES[s]}</b>${pips(s)}</div>
+        <p class="next">${nextStep(n.id)}</p>
+        <div class="qlog"><button data-k="seen">+ Taught</button><button data-k="drilled">+ Drilled</button><button data-k="hit">+ Hit live</button></div>
+        ${ti ? `<div class="today"><span>Today: ${KINDS[ti.k]}${ti.k === "hit" ? ` ×${ti.n || 1}` : ""}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
+        <p class="next">${st.seenS ? `Logged in ${st.seenS} session${st.seenS > 1 ? "s" : ""} · ${st.hits} live hit${st.hits === 1 ? "" : "s"} · last ${fmtDate(st.last)}` : "Not logged yet."}</p>
+        <label class="basesel" for="base">Already know it?<select id="base">${STAGES.map((l, i) => `<option value="${i}"${(data.base[n.id] || 0) === i ? " selected" : ""}>${i ? "Start at " + l : "No starting stage"}</option>`).join("")}</select></label>
+      </div>
+      <h3>Stats</h3>
+      <div class="score">${[
+        ["Positions", n.from.length, MAXFROM],
+        ["Combos", cmb.length, MAXCMB],
+        ["Live hits", st.hits, RULES.masterHits],
+        ["Sessions", st.seenS, RULES.masterSessions + RULES.drillSessions]
+      ].map(([l, v, m]) => `<div class="srow"><span>${l}</span><span class="sbar"><i style="width:${Math.min(100, 100 * v / m)}%"></i></span><span>${v}</span></div>`).join("")}</div>
+      <h3>Related positions · works from (${n.from.length})</h3><div class="links">${n.from.map(chip).join("")}</div>
+      ${n.to ? `<h3>Leads to</h3><div class="links">${chip(n.to)}</div>` : ""}
+      ${cmb.length ? `<h3>Combos with</h3><div class="links">${cmb.map(chip).join("")}</div>` : ""}
+      ${rel.length ? `<h3>Related moves</h3><div class="links">${rel.map(chip).join("")}</div>` : ""}`;
+    panel.querySelectorAll("[data-k]").forEach(b => b.onclick = () => quickLog(n.id, b.dataset.k));
+    const ct = panel.querySelector("#clearToday"); if (ct) ct.onclick = () => clearToday(n.id);
+    panel.querySelector("#base").onchange = e => { const v = +e.target.value; if (v) data.base[n.id] = v; else delete data.base[n.id]; commit(); };
+  }
+  panel.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { select(b.dataset.go); if (view === "map" && !isPhone) focusOn(nodeById.get(b.dataset.go)); });
+  panel.insertAdjacentHTML("afterbegin", `<div class="backbar"><button id="backBtn">‹ Back</button><span class="entry-no">${entryNo.get(n.id)}</span></div>`);
+  panel.querySelector("#backBtn").onclick = () => select(null);
+}
+function select(id) {
+  selected = id;
+  const n = id && nodeById.get(id);
+  if (n && view === "dex") listTab = n.hub ? "positions" : "moves";
+  if (n && !n.hub && hidden.has(n.type)) { hidden.delete(n.type); filters.querySelector(`[data-type="${n.type}"]`)?.setAttribute("aria-pressed", "true"); }
+  refresh();
+  if (id && view === "dex") document.getElementById("row-" + id)?.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+  panel.scrollTop = 0;
+  const vs = document.getElementById("viewerSlot"); if (vs) vs.scrollTop = 0;
+}
+document.addEventListener("keydown", e => {
+  if (view !== "dex" || !sheet.hidden || e.altKey || e.metaKey || e.ctrlKey) return;
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "")) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault(); nav(e.key === "ArrowDown" ? 1 : -1);
+    document.getElementById("row-" + selected)?.focus({ preventScroll: true });
+  }
+});
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+}
+
+// ---------- Filters & search ----------
+const filters = document.getElementById("filters");
+filters.innerHTML = Object.entries(TYPES).map(([k, v]) => `<button class="chip" data-type="${k}" aria-pressed="true"><span class="dot t-${k}"></span>${v.plural}</button>`).join("");
+filters.querySelectorAll(".chip").forEach(b => b.onclick = () => {
+  const t = b.dataset.type; hidden.has(t) ? hidden.delete(t) : hidden.add(t);
+  b.setAttribute("aria-pressed", String(!hidden.has(t))); refresh();
+});
+document.getElementById("names").innerHTML = ALL.map(n => `<option value="${esc(n.name)}">`).join("");
+document.getElementById("find").addEventListener("change", e => {
+  const q = e.target.value.trim().toLowerCase(); if (!q) return;
+  const n = ALL.find(n => n.name.toLowerCase() === q) || ALL.find(n => n.name.toLowerCase().includes(q));
+  if (n) { if (!n.hub) { hidden.delete(n.type); filters.querySelector(`[data-type="${n.type}"]`)?.setAttribute("aria-pressed", "true"); } select(n.id); if (view === "map") focusOn(n); }
+});
+
+// ---------- Session log sheet ----------
+const sheet = document.getElementById("logSheet");
+let draft = new Map(), lastFocus = null;
+function openLog() {
+  lastFocus = document.activeElement;
+  draft = new Map();
+  if (selected && !nodeById.get(selected).hub) draft.set(selected, { k: "drilled", n: 1 });
+  document.getElementById("logDate").value = todayISO();
+  document.getElementById("logSearch").value = "";
+  sheet.hidden = false; renderSheet();
+  document.getElementById("logSearch").focus();
+}
+function closeLog() { sheet.hidden = true; lastFocus?.focus?.(); }
+function renderSheet() {
+  const q = document.getElementById("logSearch").value.trim().toLowerCase();
+  const res = q ? TECHS.filter(t => !draft.has(t.id) && t.name.toLowerCase().includes(q)).slice(0, 7) : [];
+  document.getElementById("logResults").innerHTML = res.map(t => `<button data-add="${t.id}">${icon(t)}${esc(t.name)} <span class="status">${TYPES[t.type].label}</span></button>`).join("");
+  const recentIds = [...new Set(data.sessions.slice(-4).reverse().flatMap(s => Object.keys(s.items)))].filter(id => !draft.has(id)).slice(0, 10);
+  document.getElementById("logRecent").innerHTML = !q && recentIds.length
+    ? `<div class="field">Recent<div class="links">${recentIds.map(id => `<button data-add="${id}">${icon(nodeById.get(id), 12)}${esc(nodeById.get(id).name)}</button>`).join("")}</div></div>` : "";
+  document.getElementById("logPicked").innerHTML = [...draft].map(([id, v]) => `<div class="prow">
+      <span class="nm">${icon(nodeById.get(id))}${esc(nodeById.get(id).name)}</span><button class="x" data-rm="${id}" aria-label="Remove ${esc(nodeById.get(id).name)}">✕</button>
+      <div class="ctrl"><span class="seg" role="group" aria-label="What you did">${Object.entries(KINDS).map(([k, l]) => `<button data-set="${id}" data-k="${k}" aria-pressed="${v.k === k}">${l}</button>`).join("")}</span>
+      ${v.k === "hit" ? `<span class="stepper"><button data-dec="${id}" aria-label="Fewer hits">−</button><b>${v.n}</b><button data-inc="${id}" aria-label="More hits">+</button> hits</span>` : ""}</div></div>`).join("");
+  document.getElementById("logCount").textContent = draft.size ? `${draft.size} move${draft.size > 1 ? "s" : ""} in this session` : "Nothing added yet";
+  document.getElementById("saveLog").disabled = !draft.size;
+  sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.set(b.dataset.add, { k: "drilled", n: 1 }); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
+  sheet.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { draft.delete(b.dataset.rm); renderSheet(); });
+  sheet.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { draft.get(b.dataset.set).k = b.dataset.k; renderSheet(); });
+  sheet.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => { draft.get(b.dataset.inc).n++; renderSheet(); });
+  sheet.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => { const v = draft.get(b.dataset.dec); v.n = Math.max(1, v.n - 1); renderSheet(); });
+}
+document.getElementById("logSearch").addEventListener("input", renderSheet);
+document.getElementById("logSearch").addEventListener("keydown", e => { if (e.key === "Enter") { const b = sheet.querySelector("#logResults [data-add]"); if (b) { e.preventDefault(); b.click(); } } });
+document.getElementById("openLog").onclick = openLog;
+document.getElementById("closeLog").onclick = closeLog;
+document.getElementById("cancelLog").onclick = closeLog;
+sheet.addEventListener("click", e => { if (e.target === sheet) closeLog(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hidden) closeLog(); });
+document.getElementById("saveLog").onclick = () => {
+  const d = document.getElementById("logDate").value || todayISO();
+  const before = new Map(TECHS.map(t => [t.id, stage(t.id)]));
+  const s = sessionFor(d, true);
+  draft.forEach((v, id) => addItem(s, id, v.k, v.n));
+  commit(); closeLog();
+  const ups = [...draft.keys()].filter(id => stage(id) > before.get(id));
+  toast(ups.length ? `Saved · ${ups.length} move${ups.length > 1 ? "s" : ""} levelled up` : `Saved · ${draft.size} move${draft.size > 1 ? "s" : ""} logged`);
+};
+
+// ---------- Saving: your account when available, this browser otherwise ----------
+const syncEl = document.getElementById("sync");
+let ref = null, writing = false, again = false, saveTimer = null;
+function save() {
+  data.updatedAt = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+  if (!ref) return;
+  clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500);
+}
+async function flush() {
+  if (!ref) return;
+  if (writing) { again = true; return; }
+  writing = true;
+  try { await ref.set({ v: 2, sessions: data.sessions, base: data.base, updatedAt: data.updatedAt || Date.now() }); syncEl.textContent = "Saved to your account"; }
+  catch (e) { syncEl.textContent = "Saved in this browser only"; }
+  writing = false;
+  if (again) { again = false; flush(); }
+}
+(async () => {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    const id = user ? await user.id() : null;
+    if (!db || !id) return;
+    ref = db.collection("data/users/" + id).doc("progress");
+    let first = true;
+    const wait = setTimeout(() => { syncEl.textContent = "Can't reach saved progress yet"; }, 10000);
+    ref.onSnapshot(snap => {
+      if (!snap.metadata || !snap.metadata.fromCache) clearTimeout(wait);
+      const d = snap.data();
+      const pending = snap.metadata && snap.metadata.hasPendingWrites;
+      if (d && d.v === 2 && Array.isArray(d.sessions)) {
+        if (!pending) { data = { v: 2, sessions: d.sessions, base: d.base || {}, updatedAt: d.updatedAt }; recompute(); refresh(); }
+      } else if (first) {
+        if (d && Array.isArray(d.learned)) d.learned.forEach(x => { const n = nodeById.get(x); if (n && !n.hub && !data.base[x]) data.base[x] = 2; });
+        if (data.sessions.length || Object.keys(data.base).length) { recompute(); refresh(); flush(); }
+      }
+      first = false;
+    }, () => { clearTimeout(wait); ref = null; });
+  } catch (e) { ref = null; }
+})();
+
+// ---------- Views ----------
+let fitted = false;
+function setView(v) {
+  if (v === "progress" && !isPhone) v = "dex";
+  if (isPhone && v !== view) selected = null;
+  view = v;
+  dexEl.hidden = v !== "dex";
+  document.getElementById("board").hidden = v !== "map";
+  document.body.classList.toggle("v-dex", v === "dex");
+  document.body.classList.toggle("v-map", v === "map");
+  document.body.classList.toggle("v-progress", v === "progress");
+  document.getElementById("tab-dex").setAttribute("aria-current", v === "dex" ? "page" : "false");
+  document.getElementById("tab-map").setAttribute("aria-current", v === "map" ? "page" : "false");
+  document.querySelectorAll(".tabbar [data-v]").forEach(b => b.setAttribute("aria-current", b.dataset.v === v ? "page" : "false"));
+  // Phones: the entry panel is a full-screen sheet; desktop dex: it's the device's left screen.
+  if (v === "dex" && !isPhone) document.getElementById("viewerSlot").appendChild(panel);
+  else document.querySelector("main").appendChild(panel);
+  // Phones: the type filters live at the top of the list instead of the header.
+  const f = document.getElementById("filters");
+  if (isPhone) dexEl.querySelector(".listhead").appendChild(f);
+  else document.querySelector("header .search").before(f);
+  if (v === "map" && !fitted) { fit(); fitted = true; }
+  refresh();
+  if (v === "map" && selected && !isPhone) focusOn(nodeById.get(selected));
+}
+const viewFromHash = () => ({ "#map": "map", "#progress": "progress" })[location.hash] || "dex";
+window.addEventListener("hashchange", () => setView(viewFromHash()));
+document.querySelectorAll(".tabbar [data-v]").forEach(b => b.onclick = () => {
+  if (b.dataset.v === view) { select(null); return; }
+  location.hash = b.dataset.v;
+});
+document.querySelector(".tabbar [data-log]").onclick = () => openLog();
+phoneQuery.addEventListener("change", e => { isPhone = e.matches; fitted = false; setView(view); });
+recompute();
+setView(viewFromHash());
+</script>
