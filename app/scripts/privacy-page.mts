@@ -1,4 +1,5 @@
-// Writes docs/privacy.html (the hosted copy for the store listings) from src/data/privacy.ts.
+// Writes docs/privacy.html and docs/privacy.md (the hosted copies for the store listings)
+// from src/data/privacy.ts. The .md is for pasting into a public GitHub Gist.
 // Run with: npm run privacy-page
 import { writeFileSync } from 'node:fs';
 import { PRIVACY, PRIVACY_CONTACT, PRIVACY_UPDATED } from '../src/data/privacy.ts';
@@ -33,4 +34,15 @@ ${PRIVACY.map(s => `<h2>${esc(s.heading)}</h2>\n<p>${esc(s.body)}</p>`).join('\n
 </html>
 `;
 writeFileSync(new URL('../../docs/privacy.html', import.meta.url), html);
-console.log('Wrote docs/privacy.html');
+const md = `# Grappling Dex privacy policy
+
+Last updated ${PRIVACY_UPDATED}
+
+${PRIVACY.map(s => `## ${s.heading}\n\n${s.body}`).join('\n\n')}
+
+## Contact
+
+Questions go to [the project's GitHub page](${PRIVACY_CONTACT}).
+`;
+writeFileSync(new URL('../../docs/privacy.md', import.meta.url), md);
+console.log('Wrote docs/privacy.html and docs/privacy.md');
