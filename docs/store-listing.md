@@ -11,8 +11,8 @@ Copy for App Store Connect and the Google Play Console. The character limits are
 | Play short description (80) | Log your BJJ training and level up 85 moves from Seen to Mastered. |
 | Bundle ID / package | `com.chnk137.grappledex` |
 | Category | Sports (Apple: Sports, with Health & Fitness second) |
-| Privacy policy URL | The public Gist made from `docs/privacy.md` (link to add here) |
-| Support URL | To decide: the repo is private, so its issues page is not public. Use a support email or another public page |
+| Privacy policy URL | https://chnk137.github.io/grappling_dex/privacy.html (GitHub Pages, built from `docs/privacy.html`). Backup copy: https://gist.github.com/chnk137/374df88cb4aa57b0351366f54c96ed66 |
+| Support URL | https://github.com/chnk137/grappling_dex/issues |
 | Price | Free, no in-app purchases |
 
 ## Description
@@ -62,8 +62,8 @@ Required sizes: iPhone 6.9" (1320 × 2868) and Android phone (1080 × 1920 or la
 ## Before submitting
 
 - [ ] Apple Developer Program and Google Play Console accounts approved
-- [ ] Privacy policy published as a public Gist, and the link loads when signed out
-- [ ] A public support contact chosen, and `PRIVACY_CONTACT` in `app/src/data/privacy.ts` updated to match
+- [x] Privacy policy live on GitHub Pages, and the repo's issues page is public for support
+- [ ] After any change to `app/src/data/privacy.ts`, run `npm run privacy-page` and push, so the hosted copy matches the app
 - [ ] Tested on a real iPhone and Android phone, including Back up and Restore
 - [ ] Screenshots taken
 - [ ] Google closed test: 12 testers opted in for 14 days
