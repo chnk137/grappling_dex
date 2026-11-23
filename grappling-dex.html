@@ -240,6 +240,9 @@ aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1e
 .results button:hover, .results button:focus-visible { background: var(--line); }
 .picked { display: flex; flex-direction: column; gap: 8px; }
 .prow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.prow.need { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass); }
+.primary:disabled { opacity: .4; cursor: default; }
+#logCount.warn { color: var(--brass); font-weight: 700; }
 .prow .nm { font-weight: 600; display: flex; gap: 8px; align-items: center; min-width: 0; }
 .prow .ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; grid-column: 1 / -1; }
 .prow .from { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
@@ -1045,14 +1048,15 @@ document.getElementById("find").addEventListener("change", e => {
 // ---------- Session log sheet ----------
 const sheet = document.getElementById("logSheet");
 // Picked rows: { uid, id, k, pos }. The same move can be added again from another position.
-let draft = [], lastFocus = null, uidSeq = 1;
+// `flagged` is set when Save was tapped with a position missing, to highlight those moves.
+let draft = [], lastFocus = null, uidSeq = 1, flagged = false;
 function newRow(id, k = "drilled") {
   const from = nodeById.get(id).from, lp = lastPos(id);
   return { uid: uidSeq++, id, k, pos: from.length === 1 ? from[0] : lp && from.includes(lp) ? lp : null };
 }
 function openLog() {
   lastFocus = document.activeElement;
-  draft = [];
+  draft = []; flagged = false;
   if (selected && !nodeById.get(selected).hub) draft.push(newRow(selected));
   document.getElementById("logDate").value = todayISO();
   document.getElementById("logSearch").value = "";
@@ -1072,15 +1076,21 @@ function renderSheet() {
   document.getElementById("logPicked").innerHTML = draft.map(r => {
     const n = nodeById.get(r.id), used = new Set(draft.filter(x => x.id === r.id && x.uid !== r.uid).map(x => x.pos));
     const free = n.from.filter(h => !used.has(h));
-    return `<div class="prow">
+    return `<div class="prow${flagged && !r.pos ? " need" : ""}" data-uid="${r.uid}">
       <span class="nm">${icon(n)}${esc(n.name)}</span><button class="x" data-rm="${r.uid}" aria-label="Remove ${esc(n.name)}">✕</button>
       <div class="ctrl"><span class="seg" role="group" aria-label="What you did">${Object.entries(KINDS).map(([k, l]) => `<button data-set="${r.uid}" data-k="${k}" aria-pressed="${r.k === k}">${l}</button>`).join("")}</span></div>
       <div class="from"><span class="fromlbl${r.pos ? "" : " need"}">${r.pos ? "From" : "From where?"}</span><span class="posrow" role="group" aria-label="Where ${esc(n.name)} started from">${free.map(h => `<button data-row="${r.uid}" data-pos="${h}" aria-pressed="${r.pos === h}">${esc(hubById.get(h).name)}</button>`).join("")}</span>
       ${free.length > 1 ? `<button class="linkbtn another" data-another="${r.uid}">+ Also from another position</button>` : ""}</div></div>`;
   }).join("");
-  const missing = draft.filter(r => !r.pos).length;
-  document.getElementById("logCount").textContent = !draft.length ? "Nothing added yet" : missing ? `Pick where ${missing === 1 ? "1 move" : missing + " moves"} started` : `${draft.length} ${draft.length > 1 ? "entries" : "entry"} in this session`;
-  document.getElementById("saveLog").disabled = !draft.length || missing > 0;
+  const missing = draft.filter(r => !r.pos);
+  if (!missing.length) flagged = false;
+  const countEl = document.getElementById("logCount");
+  countEl.textContent = !draft.length ? "Nothing added yet"
+    : missing.length ? `Pick where ${missing.length === 1 ? nodeById.get(missing[0].id).name : missing.length + " moves"} started`
+    : `${draft.length} ${draft.length > 1 ? "entries" : "entry"} in this session`;
+  countEl.classList.toggle("warn", flagged && missing.length > 0);
+  // Save stays tappable once something is added: tapping it with a position missing points at that move.
+  document.getElementById("saveLog").disabled = !draft.length;
   sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.push(newRow(b.dataset.add)); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
   sheet.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { draft = draft.filter(r => r.uid !== +b.dataset.rm); renderSheet(); });
   sheet.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { row(b.dataset.set).k = b.dataset.k; renderSheet(); });
@@ -1101,7 +1111,15 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hid
 document.getElementById("saveLog").onclick = () => {
   const d = document.getElementById("logDate").value || todayISO();
   const before = new Map(TECHS.map(t => [t.id, stage(t.id)]));
-  if (!draft.length || draft.some(r => !r.pos)) return;
+  if (!draft.length) return;
+  const first = draft.find(r => !r.pos);
+  if (first) {
+    flagged = true; renderSheet();
+    const rowEl = sheet.querySelector(`.prow[data-uid="${first.uid}"]`);
+    rowEl?.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+    rowEl?.querySelector("[data-pos]")?.focus({ preventScroll: true });
+    return;
+  }
   const s = sessionFor(d, true);
   draft.forEach(r => addItem(s, r.id, r.k, r.pos));
   commit(); closeLog();

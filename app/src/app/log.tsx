@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SectionLabel, TypeIcon } from '../components/ui';
 import { nameOf, techniqueById, techniques, TYPES } from '../data/catalog';
@@ -23,6 +23,10 @@ export default function LogScreen() {
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState<Row[]>([]);
   const [result, setResult] = useState<string[] | null>(null);
+  // Set when Save is tapped with a position missing: those moves get outlined.
+  const [flagged, setFlagged] = useState(false);
+  const scroller = useRef<ScrollViewInstance>(null);
+  const rowY = useRef(new Map<number, number>());
 
   const q = query.trim().toLowerCase();
   const pickedIds = new Set(picked.map(p => p.moveId));
@@ -51,10 +55,19 @@ export default function LogScreen() {
   const update = (uid: number, patch: Partial<LogEntry>) => setPicked(p => p.map(e => (e.uid === uid ? { ...e, ...patch } : e)));
   const remove = (uid: number) => setPicked(p => p.filter(e => e.uid !== uid));
   const dateOk = ISO.test(date) && !Number.isNaN(Date.parse(date)) && date <= localDate();
-  const missingPos = picked.filter(e => !e.pos).length;
+  const missing = picked.filter(e => !e.pos);
+  const missingPos = missing.length;
 
   const save = () => {
-    if (!picked.length || !dateOk || missingPos) return;
+    if (!picked.length || !dateOk) return;
+    if (missingPos) {
+      // Point at the first move that still needs a position instead of doing nothing.
+      setFlagged(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      const y = rowY.current.get(missing[0].uid);
+      if (y !== undefined) scroller.current?.scrollTo({ y: Math.max(0, y - space.lg), animated: true });
+      return;
+    }
     const ups = logMoves(date, picked);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (ups.length) setResult(ups); else router.back();
@@ -81,7 +94,7 @@ export default function LogScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scroller} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <SectionLabel>Date</SectionLabel>
         <TextInput value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.muted}
           style={[styles.input, !dateOk && { borderColor: colors.gap }]} autoCorrect={false} keyboardType="numbers-and-punctuation" accessibilityLabel="Session date" />
@@ -114,7 +127,7 @@ export default function LogScreen() {
           const from = techniqueById.get(e.moveId)!.from;
           const used = new Set(picked.filter(x => x.moveId === e.moveId && x.uid !== e.uid).map(x => x.pos));
           return (
-          <View key={e.uid} style={styles.picked}>
+          <View key={e.uid} style={[styles.picked, flagged && !e.pos && styles.pickedNeed]} onLayout={ev => rowY.current.set(e.uid, ev.nativeEvent.layout.y)}>
             <View style={styles.pickedHead}>
               <TypeIcon type={techniqueById.get(e.moveId)!.type} size={13} />
               <Text style={styles.pickedName}>{nameOf(e.moveId)}</Text>
@@ -147,10 +160,10 @@ export default function LogScreen() {
         })}
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
-        <Text style={[styles.small, { flex: 1 }]}>
-          {!picked.length ? 'Nothing added yet' : missingPos ? `Pick where ${missingPos === 1 ? '1 move' : `${missingPos} moves`} started` : `${picked.length} ${picked.length > 1 ? 'entries' : 'entry'} in this session`}
+        <Text style={[styles.small, { flex: 1 }, flagged && missingPos > 0 && styles.warn]} accessibilityLiveRegion="polite">
+          {!picked.length ? 'Nothing added yet' : missingPos ? `Pick where ${missingPos === 1 ? nameOf(missing[0].moveId) : `${missingPos} moves`} started` : `${picked.length} ${picked.length > 1 ? 'entries' : 'entry'} in this session`}
         </Text>
-        <Button label="Save session" onPress={save} style={[{ paddingHorizontal: 22 }, (!picked.length || !dateOk || missingPos > 0) && { opacity: 0.4 }]} />
+        <Button label="Save session" onPress={save} style={[{ paddingHorizontal: 22 }, (!picked.length || !dateOk) && { opacity: 0.4 }]} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -160,6 +173,8 @@ const styles = StyleSheet.create({
   body: { padding: space.lg, gap: space.sm, paddingBottom: space.xl },
   fromLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
   posRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  pickedNeed: { borderColor: colors.brass, borderWidth: 2 },
+  warn: { color: colors.brass, fontWeight: '700' },
   posChip: { minHeight: 34, paddingHorizontal: 10, justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg },
   posOn: { backgroundColor: colors.brass, borderColor: colors.brass },
   posText: { color: colors.ink, fontSize: 13.5 },
