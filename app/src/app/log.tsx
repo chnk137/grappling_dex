@@ -5,11 +5,15 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SectionLabel, TypeIcon } from '../components/ui';
 import { nameOf, techniqueById, techniques, TYPES } from '../data/catalog';
-import { KIND_LABEL, localDate, STAGES, type Kind } from '../lib/progress';
+import { KIND_LABEL, lastPosition, localDate, movesIn, STAGES, type Kind } from '../lib/progress';
 import { useProgress, type LogEntry } from '../lib/store';
 import { colors, radius, space } from '../theme';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A picked row. The same move can be added again from another position. */
+type Row = LogEntry & { uid: number };
+let nextUid = 1;
 
 export default function LogScreen() {
   const router = useRouter();
@@ -17,24 +21,40 @@ export default function LogScreen() {
   const { progress, stage, logMoves } = useProgress();
   const [date, setDate] = useState(localDate());
   const [query, setQuery] = useState('');
-  const [picked, setPicked] = useState<LogEntry[]>([]);
+  const [picked, setPicked] = useState<Row[]>([]);
   const [result, setResult] = useState<string[] | null>(null);
 
   const q = query.trim().toLowerCase();
   const pickedIds = new Set(picked.map(p => p.moveId));
   const results = q ? techniques.filter(t => !pickedIds.has(t.id) && t.name.toLowerCase().includes(q)).slice(0, 7) : [];
   const recent = useMemo(
-    () => [...new Set([...progress.sessions].reverse().slice(0, 4).flatMap(s => Object.keys(s.items)))].slice(0, 10),
+    () => [...new Set([...progress.sessions].reverse().slice(0, 4).flatMap(movesIn))].slice(0, 10),
     [progress],
   ).filter(id => !pickedIds.has(id));
 
-  const add = (moveId: string) => { setPicked(p => [...p, { moveId, kind: 'drilled' }]); setQuery(''); Haptics.selectionAsync(); };
-  const update = (moveId: string, patch: Partial<LogEntry>) => setPicked(p => p.map(e => (e.moveId === moveId ? { ...e, ...patch } : e)));
-  const remove = (moveId: string) => setPicked(p => p.filter(e => e.moveId !== moveId));
+  // Starts on the position this move was last logged from (or its only one); otherwise you pick.
+  const defaultPos = (moveId: string) => {
+    const from = techniqueById.get(moveId)!.from;
+    const last = lastPosition(progress, moveId);
+    return from.length === 1 ? from[0] : last && from.includes(last) ? last : null;
+  };
+  const add = (moveId: string) => {
+    setPicked(p => [...p, { uid: nextUid++, moveId, kind: 'drilled', pos: defaultPos(moveId) }]);
+    setQuery('');
+    Haptics.selectionAsync();
+  };
+  const addAnother = (e: Row) => {
+    const used = new Set(picked.filter(x => x.moveId === e.moveId).map(x => x.pos));
+    const free = techniqueById.get(e.moveId)!.from.filter(f => !used.has(f));
+    setPicked(p => [...p, { uid: nextUid++, moveId: e.moveId, kind: e.kind, pos: free.length === 1 ? free[0] : null }]);
+  };
+  const update = (uid: number, patch: Partial<LogEntry>) => setPicked(p => p.map(e => (e.uid === uid ? { ...e, ...patch } : e)));
+  const remove = (uid: number) => setPicked(p => p.filter(e => e.uid !== uid));
   const dateOk = ISO.test(date) && !Number.isNaN(Date.parse(date)) && date <= localDate();
+  const missingPos = picked.filter(e => !e.pos).length;
 
   const save = () => {
-    if (!picked.length || !dateOk) return;
+    if (!picked.length || !dateOk || missingPos) return;
     const ups = logMoves(date, picked);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (ups.length) setResult(ups); else router.back();
@@ -90,28 +110,47 @@ export default function LogScreen() {
           </>
         )}
 
-        {picked.map(e => (
-          <View key={e.moveId} style={styles.picked}>
+        {picked.map(e => {
+          const from = techniqueById.get(e.moveId)!.from;
+          const used = new Set(picked.filter(x => x.moveId === e.moveId && x.uid !== e.uid).map(x => x.pos));
+          return (
+          <View key={e.uid} style={styles.picked}>
             <View style={styles.pickedHead}>
               <TypeIcon type={techniqueById.get(e.moveId)!.type} size={13} />
               <Text style={styles.pickedName}>{nameOf(e.moveId)}</Text>
-              <Pressable onPress={() => remove(e.moveId)} hitSlop={12} accessibilityLabel={`Remove ${nameOf(e.moveId)}`}><Text style={styles.x}>✕</Text></Pressable>
+              <Pressable onPress={() => remove(e.uid)} hitSlop={12} accessibilityLabel={`Remove ${nameOf(e.moveId)}`}><Text style={styles.x}>✕</Text></Pressable>
             </View>
             <View style={styles.ctrl}>
               <View style={styles.seg}>
                 {(['seen', 'drilled', 'hit'] as Kind[]).map(k => (
-                  <Pressable key={k} onPress={() => update(e.moveId, { kind: k })} style={[styles.segBtn, e.kind === k && styles.segOn]} accessibilityRole="radio" accessibilityState={{ selected: e.kind === k }}>
+                  <Pressable key={k} onPress={() => update(e.uid, { kind: k })} style={[styles.segBtn, e.kind === k && styles.segOn]} accessibilityRole="radio" accessibilityState={{ selected: e.kind === k }}>
                     <Text style={[styles.segText, e.kind === k && { color: colors.bg }]}>{KIND_LABEL[k]}</Text>
                   </Pressable>
                 ))}
               </View>
             </View>
+            <Text style={[styles.fromLabel, !e.pos && { color: colors.brass }]}>{e.pos ? 'From' : 'From where?'}</Text>
+            <View style={styles.posRow} accessibilityRole="radiogroup" accessibilityLabel={`Where ${nameOf(e.moveId)} started from`}>
+              {from.filter(f => !used.has(f)).map(f => (
+                <Pressable key={f} onPress={() => update(e.uid, { pos: f })} style={[styles.posChip, e.pos === f && styles.posOn]} accessibilityRole="radio" accessibilityState={{ selected: e.pos === f }}>
+                  <Text style={[styles.posText, e.pos === f && { color: colors.bg }]}>{nameOf(f)}</Text>
+                </Pressable>
+              ))}
+            </View>
+            {from.length > used.size + 1 && (
+              <Pressable onPress={() => addAnother(e)} hitSlop={8} accessibilityRole="button">
+                <Text style={styles.another}>+ Also from another position</Text>
+              </Pressable>
+            )}
           </View>
-        ))}
+          );
+        })}
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
-        <Text style={styles.small}>{picked.length ? `${picked.length} move${picked.length > 1 ? 's' : ''} in this session` : 'Nothing added yet'}</Text>
-        <Button label="Save session" onPress={save} style={[{ paddingHorizontal: 22 }, (!picked.length || !dateOk) && { opacity: 0.4 }]} />
+        <Text style={[styles.small, { flex: 1 }]}>
+          {!picked.length ? 'Nothing added yet' : missingPos ? `Pick where ${missingPos === 1 ? '1 move' : `${missingPos} moves`} started` : `${picked.length} ${picked.length > 1 ? 'entries' : 'entry'} in this session`}
+        </Text>
+        <Button label="Save session" onPress={save} style={[{ paddingHorizontal: 22 }, (!picked.length || !dateOk || missingPos > 0) && { opacity: 0.4 }]} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -119,6 +158,12 @@ export default function LogScreen() {
 
 const styles = StyleSheet.create({
   body: { padding: space.lg, gap: space.sm, paddingBottom: space.xl },
+  fromLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
+  posRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  posChip: { minHeight: 34, paddingHorizontal: 10, justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg },
+  posOn: { backgroundColor: colors.brass, borderColor: colors.brass },
+  posText: { color: colors.ink, fontSize: 13.5 },
+  another: { color: colors.brass, fontSize: 13.5, fontWeight: '600', paddingVertical: 4 },
   input: { height: 46, borderRadius: radius.sm + 2, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg2, color: colors.ink, paddingHorizontal: 12, fontSize: 16 },
   err: { color: colors.gap, fontSize: 13 },
   result: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 8, borderRadius: radius.sm },

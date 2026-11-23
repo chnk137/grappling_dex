@@ -1,5 +1,5 @@
 import raw from './catalog.json';
-import { stageOf, type Progress } from '../lib/progress';
+import { posStage, stageOf, type Progress } from '../lib/progress';
 
 export type MoveType = 'sub' | 'sweep' | 'pass' | 'move' | 'escape';
 export type Tier = 'stand' | 'guard' | 'leg' | 'pin' | 'dom';
@@ -52,9 +52,13 @@ export const MAX_COMBOS = Math.max(...techniques.map(t => combos(t).length));
 
 export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in'; have: number; total: number }
 
-/** How much of your game exists at a position, counted at Hit or better. */
+/**
+ * How much of your game exists at a position, counted at Hit or better.
+ * Moves from here only count when logged from here; ways in count from anywhere.
+ */
 export function scorecard(p: Progress, posId: string): ScoreRow[] {
-  const at = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length });
+  const at = (list: Technique[]) => ({ have: list.filter(t => posStage(p, t.id, posId) >= 3).length, total: list.length });
+  const into = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length });
   const rows: ScoreRow[] = [];
   const from = techniques.filter(t => t.from.includes(posId));
   const attacks = from.filter(t => t.type === 'sub' || t.type === 'sweep' || t.type === 'move');
@@ -64,13 +68,13 @@ export function scorecard(p: Progress, posId: string): ScoreRow[] {
   if (attacks.length) rows.push({ label: 'Attacks', ...at(attacks) });
   if (passes.length) rows.push({ label: 'Passes', ...at(passes) });
   if (escapes.length) rows.push({ label: 'Escapes', ...at(escapes) });
-  if (waysIn.length) rows.push({ label: 'Ways in', ...at(waysIn) });
+  if (waysIn.length) rows.push({ label: 'Ways in', ...into(waysIn) });
   return rows;
 }
 
-/** A position counts as part of your game once any move from or into it is logged. */
+/** A position counts as part of your game once a move is logged from it, or a move into it is logged. */
 export const positionActive = (p: Progress, posId: string) =>
-  techniques.some(t => (t.from.includes(posId) || t.to === posId) && stageOf(p, t.id) >= 1);
+  techniques.some(t => (t.from.includes(posId) && posStage(p, t.id, posId) >= 1) || (t.to === posId && stageOf(p, t.id) >= 1));
 
 /** Whether an unlogged entry sits next to something you already train. */
 export function nearby(p: Progress, id: string): boolean {

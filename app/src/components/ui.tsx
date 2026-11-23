@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { isPosition, nameOf, techniqueById, type MoveType } from '../data/catalog';
+import { posStage } from '../lib/progress';
 import { useProgress } from '../lib/store';
 import { colors, radius, space, typeColor } from '../theme';
 
@@ -34,11 +35,12 @@ export function Pips({ stage, onBrass = false }: { stage: number; onBrass?: bool
 }
 
 /** A tappable link to another entry, showing its stage for moves. */
-export function EntryChip({ id }: { id: string }) {
+/** A link to an entry. With `at`, a move's pips show its stage from that position only. */
+export function EntryChip({ id, at }: { id: string; at?: string }) {
   const router = useRouter();
-  const { stage } = useProgress();
+  const { stage, progress } = useProgress();
   const pos = isPosition(id);
-  const s = pos ? 0 : stage(id);
+  const s = pos ? 0 : at ? posStage(progress, id, at) : stage(id);
   return (
     <Pressable onPress={() => router.push({ pathname: '/entry/[id]', params: { id } })}
       style={({ pressed }) => [styles.chip, s >= 3 && { borderColor: colors.brass }, pressed && { backgroundColor: colors.line }]}
@@ -50,8 +52,8 @@ export function EntryChip({ id }: { id: string }) {
   );
 }
 
-export function Chips({ ids }: { ids: string[] }) {
-  return <View style={styles.chips}>{ids.map(id => <EntryChip key={id} id={id} />)}</View>;
+export function Chips({ ids, at }: { ids: string[]; at?: string }) {
+  return <View style={styles.chips}>{ids.map(id => <EntryChip key={id} id={id} at={at} />)}</View>;
 }
 
 export function SectionLabel({ children, color }: { children: string; color?: string }) {

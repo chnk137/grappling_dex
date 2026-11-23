@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, LogFab, Pips, SectionLabel } from '../../components/ui';
 import { gaps, techniques } from '../../data/catalog';
 import { pickBackup, shareBackup } from '../../lib/backup';
-import { RULES, STAGES, type Progress } from '../../lib/progress';
+import { movesIn, RULES, STAGES, type Progress } from '../../lib/progress';
 import { useProgress } from '../../lib/store';
 import { colors, radius, space } from '../../theme';
 
@@ -70,7 +70,7 @@ export default function ProgressScreen() {
         <SectionLabel>Recent sessions</SectionLabel>
         {recent.length ? recent.map(s => (
           <View key={s.id} style={styles.sess}>
-            <Text style={styles.sessDate}>{fmtDate(s.date)} <Text style={styles.muted}>· {Object.keys(s.items).length} moves</Text></Text>
+            <Text style={styles.sessDate}>{fmtDate(s.date)} <Text style={styles.muted}>· {movesIn(s).length} move{movesIn(s).length === 1 ? '' : 's'}</Text></Text>
             <Pressable onPress={() => (armed === s.id ? (removeSession(s.id), setArmed(null)) : setArmed(s.id))} hitSlop={10} accessibilityRole="button">
               <Text style={[styles.remove, armed === s.id && { color: colors.gap }]}>{armed === s.id ? 'Tap again to remove' : 'Remove'}</Text>
             </Pressable>

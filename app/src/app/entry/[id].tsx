@@ -1,12 +1,13 @@
 import * as Haptics from 'expo-haptics';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Bar, Chips, Pips, SectionLabel, TypeIcon } from '../../components/ui';
 import {
   combos, entryNo, MAX_COMBOS, MAX_FROM, positionActive, positionById, positionLinks, relatedMoves, scorecard,
   techniqueById, techniques, TIERS, TYPES, type MoveType, type Technique,
 } from '../../data/catalog';
-import { KIND_LABEL, localDate, nextStep, RULES, stats, STAGES, type Kind, type Stage } from '../../lib/progress';
+import { KIND_LABEL, lastPosition, localDate, nextStep, posStats, RULES, splitKey, stats, STAGES, derivedStage, type Kind, type Stage } from '../../lib/progress';
 import { useProgress } from '../../lib/store';
 import { colors, radius, space, typeColor } from '../../theme';
 
@@ -25,17 +26,31 @@ export default function EntryScreen() {
 }
 
 function MoveEntry({ t }: { t: Technique }) {
+  const router = useRouter();
   const { progress, stage, logMoves, clearToday, setBase } = useProgress();
   const s = stage(t.id);
   const st = stats(progress, t.id);
-  const today = progress.sessions.find(x => x.date === localDate())?.items[t.id];
+  const todaySession = progress.sessions.find(x => x.date === localDate());
+  const today = todaySession
+    ? Object.entries(todaySession.items).map(([k, it]) => ({ ...splitKey(k), kind: it.kind })).filter(x => x.moveId === t.id)
+    : [];
   const cmb = combos(t);
+  const last = lastPosition(progress, t.id);
+  // Quick log asks where it started from, unless the move only has one position.
+  const [asking, setAsking] = useState<Kind | null>(null);
 
-  const quick = (kind: Kind) => {
-    const ups = logMoves(localDate(), [{ moveId: t.id, kind }]);
+  const log = (kind: Kind, pos: string) => {
+    setAsking(null);
+    const ups = logMoves(localDate(), [{ moveId: t.id, kind, pos }]);
     if (ups.length) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
+  const quick = (kind: Kind) => {
+    if (t.from.length === 1) log(kind, t.from[0]);
+    else { setAsking(a => (a === kind ? null : kind)); Haptics.selectionAsync(); }
+  };
+  // Most recently used position first, so the usual one is the first chip.
+  const fromOrder = last && t.from.includes(last) ? [last, ...t.from.filter(f => f !== last)] : t.from;
 
   return (
     <>
@@ -56,14 +71,26 @@ function MoveEntry({ t }: { t: Technique }) {
         <Text style={styles.muted}>{nextStep(progress, t.id)}</Text>
         <View style={styles.qlog}>
           {(['seen', 'drilled', 'hit'] as Kind[]).map(k => (
-            <Pressable key={k} onPress={() => quick(k)} style={({ pressed }) => [styles.qbtn, pressed && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`Log ${KIND_LABEL[k]} for today`}>
+            <Pressable key={k} onPress={() => quick(k)} style={({ pressed }) => [styles.qbtn, (pressed || asking === k) && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`Log ${KIND_LABEL[k]} for today`} accessibilityState={{ expanded: asking === k }}>
               <Text style={styles.qtext}>+ {KIND_LABEL[k]}</Text>
             </Pressable>
           ))}
         </View>
-        {today && (
+        {asking && (
+          <View style={styles.ask}>
+            <Text style={styles.askLabel}>{`${KIND_LABEL[asking]} from where?`}</Text>
+            <View style={styles.posRow}>
+              {fromOrder.map(f => (
+                <Pressable key={f} onPress={() => log(asking, f)} style={({ pressed }) => [styles.posChip, pressed && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`${KIND_LABEL[asking]} from ${positionById.get(f)!.name}`}>
+                  <Text style={styles.ink}>{positionById.get(f)!.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+        {today.length > 0 && (
           <View style={styles.todayRow}>
-            <Text style={styles.ink}>Today: {KIND_LABEL[today.kind]}</Text>
+            <Text style={[styles.ink, { flex: 1 }]}>Today: {today.map(x => `${KIND_LABEL[x.kind]}${x.pos ? ` from ${positionById.get(x.pos)?.name ?? x.pos}` : ''}`).join(' · ')}</Text>
             <Pressable onPress={() => clearToday(t.id)} hitSlop={10}><Text style={styles.link}>Undo today</Text></Pressable>
           </View>
         )}
@@ -94,8 +121,21 @@ function MoveEntry({ t }: { t: Technique }) {
         <Bar label="Days hit live" value={st.hitDays} max={RULES.masterDays} right={`${Math.min(st.hitDays, RULES.masterDays)}/${RULES.masterDays}`} />
       </View>
 
-      <SectionLabel>{`Related positions · works from (${t.from.length})`}</SectionLabel>
-      <Chips ids={t.from} />
+      <SectionLabel>{`By position · works from (${t.from.length})`}</SectionLabel>
+      <View style={styles.byPos}>
+        {t.from.map(f => {
+          const ps = posStats(progress, t.id, f);
+          const ds = derivedStage(ps);
+          const text = ps.hitDays ? `Hit live on ${ps.hitDays} day${ps.hitDays > 1 ? 's' : ''}` : ds === 2 ? 'Drilled' : ds === 1 ? 'Seen' : 'Not logged';
+          return (
+            <Pressable key={f} onPress={() => router.push({ pathname: '/entry/[id]', params: { id: f } })} style={({ pressed }) => [styles.posLine, pressed && { backgroundColor: colors.line }]} accessibilityRole="link" accessibilityLabel={`${positionById.get(f)!.name}: ${text}`}>
+              <Text style={[styles.ink, { flex: 1 }]}>{positionById.get(f)!.name}</Text>
+              <Text style={[styles.posStat, ds >= 3 && { color: colors.brass }]}>{text}</Text>
+              <Pips stage={ds} />
+            </Pressable>
+          );
+        })}
+      </View>
       {t.to && <><SectionLabel>Leads to</SectionLabel><Chips ids={[t.to]} /></>}
       {cmb.length > 0 && <><SectionLabel>Combos with</SectionLabel><Chips ids={cmb} /></>}
       <SectionLabel>Related moves</SectionLabel>
@@ -126,7 +166,7 @@ function PositionEntry({ id }: { id: string }) {
       </View>
       {(Object.keys(TYPES) as MoveType[]).map(k => {
         const ids = techniques.filter(t => t.type === k && t.from.includes(id)).map(t => t.id);
-        return ids.length ? <View key={k} style={{ gap: space.sm }}><SectionLabel>{`${TYPES[k].plural} from here (${ids.length})`}</SectionLabel><Chips ids={ids} /></View> : null;
+        return ids.length ? <View key={k} style={{ gap: space.sm }}><SectionLabel>{`${TYPES[k].plural} from here (${ids.length})`}</SectionLabel><Chips ids={ids} at={id} /></View> : null;
       })}
       {arrive.length > 0 && <><SectionLabel>{`Ways to get here (${arrive.length})`}</SectionLabel><Chips ids={arrive} /></>}
       {neighbours.length > 0 && <><SectionLabel>Connected positions</SectionLabel><Chips ids={neighbours} /></>}
@@ -136,6 +176,13 @@ function PositionEntry({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   body: { padding: space.lg, gap: space.md, paddingBottom: 48 },
+  ask: { gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.brass, backgroundColor: colors.brassSoft },
+  askLabel: { color: colors.brass, fontSize: 12, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
+  posRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  posChip: { minHeight: 38, paddingHorizontal: 12, justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg },
+  byPos: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
+  posLine: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 46, paddingHorizontal: space.md, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.bg2 },
+  posStat: { color: colors.muted, fontSize: 13 },
   daysRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dots: { flexDirection: 'row', gap: 5 },
   dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 1.5, borderColor: colors.brass, opacity: 0.5 },

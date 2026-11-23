@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addItem, BACKUP_FORMAT, nextStep, parseBackup, stageOf, toBackup, type Progress, type Session } from './progress.ts';
+import { addItem, BACKUP_FORMAT, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
 
 const session = (date: string, items: Session['items'] = {}): Session => ({ id: date, date, items });
 const prog = (sessions: Session[], base: Progress['base'] = {}): Progress => ({ sessions, base });
@@ -57,6 +57,52 @@ test('next step text says what is left', () => {
   assert.equal(nextStep(seen, 'armbar'), 'Drill it once to reach Drilled.');
   const hit = prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 2 } }), session('2026-11-02', { armbar: { kind: 'hit', hits: 1 } })]);
   assert.equal(nextStep(hit, 'armbar'), 'Hit it live on 3 more days to reach Mastered.');
+});
+
+test('a hit from closed guard counts for closed guard only', () => {
+  const p = prog([session('2026-11-01', { 'triangle@closed': { kind: 'hit', hits: 1 }, 'armbar@closed': { kind: 'hit', hits: 1 } })]);
+  assert.equal(stageOf(p, 'triangle'), 3, 'the move itself is Hit');
+  assert.equal(posStage(p, 'triangle', 'closed'), 3);
+  assert.equal(posStage(p, 'triangle', 'smount'), 0, 'S-mount gets nothing');
+});
+
+test('the move stage combines positions, and a day counts once', () => {
+  const p = prog([
+    session('2026-11-01', { 'armbar@closed': { kind: 'hit', hits: 1 }, 'armbar@mount': { kind: 'hit', hits: 1 } }),
+    session('2026-11-02', { 'armbar@mount': { kind: 'drilled', hits: 0 } }),
+  ]);
+  assert.equal(stats(p, 'armbar').hitDays, 1);
+  assert.equal(stats(p, 'armbar').sessions, 2);
+  assert.equal(posStage(p, 'armbar', 'mount'), 3);
+  const days = ['03', '04', '05', '06'].map(d => session(`2026-11-${d}`, { 'armbar@mount': { kind: 'hit', hits: 1 } }));
+  assert.equal(stageOf(prog([...p.sessions, ...days]), 'armbar'), 4, 'five days, from any mix of positions');
+});
+
+test('old entries without a position, and starting stages, count for every position', () => {
+  const old = prog([session('2026-11-01', { triangle: { kind: 'hit', hits: 1 } })]);
+  assert.equal(posStage(old, 'triangle', 'smount'), 3);
+  assert.equal(posStage(prog([], { kimura: 3 }), 'kimura', 'side'), 3);
+});
+
+test('entries are kept per position and removed per move', () => {
+  let s = session('2026-11-01');
+  s = addItem(s, 'armbar', 'hit', 'closed');
+  s = addItem(s, 'armbar', 'drilled', 'mount');
+  s = addItem(s, 'armbar', 'seen', 'closed');
+  s = addItem(s, 'kimura', 'drilled', 'side');
+  assert.deepEqual(Object.keys(s.items), ['armbar@closed', 'armbar@mount', 'kimura@side']);
+  assert.equal(s.items['armbar@closed'].kind, 'hit');
+  assert.deepEqual(movesIn(s), ['armbar', 'kimura']);
+  assert.deepEqual(Object.keys(removeMove(s, 'armbar').items), ['kimura@side']);
+});
+
+test('lastPosition finds the most recent position used', () => {
+  const p = prog([
+    session('2026-11-01', { 'armbar@closed': { kind: 'hit', hits: 1 } }),
+    session('2026-11-02', { 'armbar@mount': { kind: 'drilled', hits: 0 }, kimura: { kind: 'seen', hits: 0 } }),
+  ]);
+  assert.equal(lastPosition(p, 'armbar'), 'mount');
+  assert.equal(lastPosition(p, 'kimura'), null);
 });
 
 test('a backup round-trips', () => {

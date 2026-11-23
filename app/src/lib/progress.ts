@@ -6,7 +6,24 @@ export type Stage = 0 | 1 | 2 | 3 | 4;
 
 /** `hits` is kept for older saved data and backups; stages no longer use it. */
 export interface SessionItem { kind: Kind; hits: number }
+/**
+ * `items` is keyed by `moveId@positionId` (where the move started from).
+ * Keys with no `@` come from before positions were logged: they credit every
+ * position the move can start from.
+ */
 export interface Session { id: string; date: string; items: Record<string, SessionItem> }
+
+// ---- Entry keys -------------------------------------------------------------
+
+export const itemKey = (moveId: string, pos?: string | null): string => (pos ? `${moveId}@${pos}` : moveId);
+
+export function splitKey(key: string): { moveId: string; pos: string | null } {
+  const i = key.indexOf('@');
+  return i < 0 ? { moveId: key, pos: null } : { moveId: key.slice(0, i), pos: key.slice(i + 1) };
+}
+
+/** Distinct move ids in a session, in the order they were logged. */
+export const movesIn = (s: Session): string[] => [...new Set(Object.keys(s.items).map(k => splitKey(k).moveId))];
 export interface Progress { sessions: Session[]; base: Record<string, Stage> }
 
 export const STAGES = ['Unseen', 'Seen', 'Drilled', 'Hit', 'Mastered'] as const;
@@ -18,18 +35,36 @@ const KIND_RANK: Record<Kind, number> = { seen: 1, drilled: 2, hit: 3 };
 /** How many sessions (training days) a move was logged in, by its best kind that day. */
 export interface MoveStats { sessions: number; drillDays: number; hitDays: number; last: string | null }
 
-export function stats(p: Progress, moveId: string): MoveStats {
+/** Best kind logged in one session for `moveId`, from `pos` only (plus old entries with no position), or from anywhere. */
+function bestKind(session: Session, moveId: string, pos?: string): Kind | null {
+  let best: Kind | null = null;
+  for (const [key, it] of Object.entries(session.items)) {
+    const k = splitKey(key);
+    if (k.moveId !== moveId) continue;
+    if (pos !== undefined && k.pos !== null && k.pos !== pos) continue;
+    if (!best || KIND_RANK[it.kind] > KIND_RANK[best]) best = it.kind;
+  }
+  return best;
+}
+
+function tally(p: Progress, moveId: string, pos?: string): MoveStats {
   const s: MoveStats = { sessions: 0, drillDays: 0, hitDays: 0, last: null };
   for (const session of p.sessions) {
-    const it = session.items[moveId];
-    if (!it) continue;
+    const kind = bestKind(session, moveId, pos);
+    if (!kind) continue;
     s.sessions++;
-    if (it.kind !== 'seen') s.drillDays++;
-    if (it.kind === 'hit') s.hitDays++;
+    if (kind !== 'seen') s.drillDays++;
+    if (kind === 'hit') s.hitDays++;
     if (!s.last || session.date > s.last) s.last = session.date;
   }
   return s;
 }
+
+/** A move's totals from every position. A training day counts once, by its best kind. */
+export const stats = (p: Progress, moveId: string): MoveStats => tally(p, moveId);
+
+/** A move's totals from one position. Old entries with no position count for every position. */
+export const posStats = (p: Progress, moveId: string, pos: string): MoveStats => tally(p, moveId, pos);
 
 /**
  * Each stage asks for one thing: Seen = logged once, Drilled = drilled once,
@@ -49,6 +84,23 @@ export function stageOf(p: Progress, moveId: string): Stage {
   return Math.max(p.base[moveId] ?? 0, derivedStage(stats(p, moveId))) as Stage;
 }
 
+/**
+ * A move's stage from one position, for that position's scorecard and gaps.
+ * Starting stages say nothing about where, so they count for every position.
+ */
+export function posStage(p: Progress, moveId: string, pos: string): Stage {
+  return Math.max(p.base[moveId] ?? 0, derivedStage(posStats(p, moveId, pos))) as Stage;
+}
+
+/** The position this move was most recently logged from, if any. */
+export function lastPosition(p: Progress, moveId: string): string | null {
+  for (let i = p.sessions.length - 1; i >= 0; i--) {
+    const keys = Object.keys(p.sessions[i].items).map(splitKey).filter(k => k.moveId === moveId && k.pos);
+    if (keys.length) return keys[keys.length - 1].pos;
+  }
+  return null;
+}
+
 export function nextStep(p: Progress, moveId: string): string {
   const stage = stageOf(p, moveId);
   if (stage === 0) return 'Log it once to mark it Seen.';
@@ -62,13 +114,21 @@ export function nextStep(p: Progress, moveId: string): string {
 }
 
 /**
- * Merge one logged move into a session (one session per training day).
- * Logging never downgrades a move within the same session: Seen < Drilled < Hit live.
+ * Merge one logged move into a session (one session per training day), under
+ * the position it started from. Logging never downgrades an entry within the
+ * same session: Seen < Drilled < Hit live.
  */
-export function addItem(session: Session, moveId: string, kind: Kind): Session {
-  const cur = session.items[moveId];
+export function addItem(session: Session, moveId: string, kind: Kind, pos?: string | null): Session {
+  const key = itemKey(moveId, pos);
+  const cur = session.items[key];
   if (cur && KIND_RANK[cur.kind] >= KIND_RANK[kind]) return session;
-  return { ...session, items: { ...session.items, [moveId]: { kind, hits: kind === 'hit' ? 1 : 0 } } };
+  return { ...session, items: { ...session.items, [key]: { kind, hits: kind === 'hit' ? 1 : 0 } } };
+}
+
+/** Removes every entry for `moveId` from a session. */
+export function removeMove(session: Session, moveId: string): Session {
+  const items = Object.fromEntries(Object.entries(session.items).filter(([k]) => splitKey(k).moveId !== moveId));
+  return { ...session, items };
 }
 
 export function localDate(d = new Date()): string {

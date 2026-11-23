@@ -242,6 +242,21 @@ aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1e
 .prow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
 .prow .nm { font-weight: 600; display: flex; gap: 8px; align-items: center; min-width: 0; }
 .prow .ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; grid-column: 1 / -1; }
+.prow .from { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.fromlbl { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.fromlbl.need { color: var(--brass); }
+.posrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.posrow button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 7px; padding: 5px 9px; font: 500 12.5px var(--font-body); cursor: pointer; }
+.posrow button[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--bg); }
+.another { font-size: 12.5px; }
+.ask { margin-top: 8px; padding: 10px; border: 1px solid var(--brass); border-radius: 10px; background: var(--brass-soft); display: grid; gap: 8px; }
+.ask b { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--brass); }
+.qlog button[aria-expanded="true"] { background: var(--brass-soft); }
+.bypos { display: grid; flex-shrink: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.posline { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; text-align: left; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 13.5px var(--font-body); cursor: pointer; }
+.posline:last-child { border-bottom: 0; }
+.posline .st { color: var(--muted); font-size: 12.5px; }
+.posline.hit .st { color: var(--brass); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg button { border: 0; background: transparent; color: var(--muted); padding: 5px 10px; font: 600 12px var(--font-body); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--brass); color: var(--bg); }
@@ -318,6 +333,8 @@ button { -webkit-tap-highlight-color: transparent; }
   .tabbar .plus svg { width: 24px; height: 24px; }
   .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   .seg button { padding: 10px 14px; font-size: 13.5px; }
+  .posrow button, .ask .links button { min-height: 38px; padding: 8px 12px; font-size: 13.5px; }
+  .posline { min-height: 46px; }
     .x { padding: 8px 10px; font-size: 16px; }
   .results button { padding: 10px 8px; font-size: 15px; }
 }
@@ -571,16 +588,40 @@ try {
   }
 } catch (e) {}
 
+// Session items are keyed "moveId@positionId" (where the move started from).
+// Keys with no "@" come from before positions were logged and credit every position.
+const keyOf = (id, pos) => pos ? `${id}@${pos}` : id;
+const splitKey = k => { const i = k.indexOf("@"); return i < 0 ? { id: k, pos: null } : { id: k.slice(0, i), pos: k.slice(i + 1) }; };
+const movesIn = s => [...new Set(Object.keys(s.items).map(k => splitKey(k).id))];
+// Best kind logged for a move in one session: from `pos` only (plus entries with no position), or from anywhere.
+function bestKind(s, id, pos) {
+  let best = null;
+  for (const [key, it] of Object.entries(s.items)) {
+    const k = splitKey(key);
+    if (k.id !== id || (pos && k.pos && k.pos !== pos)) continue;
+    if (!best || KRANK[it.k] > KRANK[best]) best = it.k;
+  }
+  return best;
+}
 // Counts training days (sessions) by the best thing logged for the move that day.
-function stats(id) {
+function stats(id, pos) {
   let seenS = 0, drillS = 0, hitS = 0, last = null;
   for (const s of data.sessions) {
-    const it = s.items[id]; if (!it) continue;
-    seenS++; if (it.k !== "seen") drillS++;
-    if (it.k === "hit") hitS++;
+    const k = bestKind(s, id, pos); if (!k) continue;
+    seenS++; if (k !== "seen") drillS++;
+    if (k === "hit") hitS++;
     if (!last || s.d > last) last = s.d;
   }
   return { seenS, drillS, hitS, last };
+}
+// A move's stage from one position, for scorecards and gaps. Starting stages count everywhere.
+const posStage = (id, pos) => Math.max(data.base[id] || 0, derived(stats(id, pos)));
+function lastPos(id) {
+  for (let i = data.sessions.length - 1; i >= 0; i--) {
+    const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.id === id && k.pos);
+    if (ks.length) return ks[ks.length - 1].pos;
+  }
+  return null;
 }
 function derived(st) {
   if (st.hitS >= RULES.masterDays) return 4;
@@ -603,8 +644,10 @@ function nextStep(id) {
 const pips = s => `<span class="pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= s ? "f" : ""}"></i>`).join("")}</span>`;
 
 // Position scorecard: how much of your game exists here (counted at Hit or better).
+// Moves from here count only when logged from here; ways in count from anywhere.
 function scorecard(h) {
-  const at = list => ({ have: list.filter(t => stage(t.id) >= 3).length, total: list.length });
+  const at = list => ({ have: list.filter(t => posStage(t.id, h.id) >= 3).length, total: list.length });
+  const into = list => ({ have: list.filter(t => stage(t.id) >= 3).length, total: list.length });
   const rows = [];
   const attacks = TECHS.filter(t => t.from.includes(h.id) && ["sub", "sweep", "move"].includes(t.type));
   const passes = TECHS.filter(t => t.from.includes(h.id) && t.type === "pass");
@@ -613,10 +656,10 @@ function scorecard(h) {
   if (attacks.length) rows.push({ label: "Attacks", ...at(attacks) });
   if (passes.length) rows.push({ label: "Passes", ...at(passes) });
   if (escapes.length) rows.push({ label: "Escapes", ...at(escapes) });
-  if (waysIn.length) rows.push({ label: "Ways in", ...at(waysIn) });
+  if (waysIn.length) rows.push({ label: "Ways in", ...into(waysIn) });
   return rows;
 }
-function hubActive(h) { return TECHS.some(t => (t.from.includes(h.id) || t.to === h.id) && stage(t.id) >= 1); }
+function hubActive(h) { return TECHS.some(t => (t.from.includes(h.id) && posStage(t.id, h.id) >= 1) || (t.to === h.id && stage(t.id) >= 1)); }
 function gaps() {
   const out = [];
   HUBS.forEach(h => {
@@ -639,21 +682,22 @@ function sessionFor(d, create) {
   if (!s && create) { s = { id: d + "-" + Math.random().toString(36).slice(2, 7), d, items: {} }; data.sessions.push(s); data.sessions.sort((a, b) => a.d < b.d ? -1 : 1); }
   return s;
 }
-// One entry per move per day; logging never downgrades it (Seen < Drilled < Hit live).
-function addItem(s, id, k) {
-  const cur = s.items[id];
-  if (!cur || KRANK[cur.k] < KRANK[k]) s.items[id] = k === "hit" ? { k, n: 1 } : { k };
+// One entry per move per position per day; logging never downgrades it (Seen < Drilled < Hit live).
+function addItem(s, id, k, pos) {
+  const key = keyOf(id, pos), cur = s.items[key];
+  if (!cur || KRANK[cur.k] < KRANK[k]) s.items[key] = k === "hit" ? { k, n: 1 } : { k };
 }
-function quickLog(id, k) {
+function quickLog(id, k, pos) {
   const before = stage(id);
-  addItem(sessionFor(todayISO(), true), id, k);
+  asking = null;
+  addItem(sessionFor(todayISO(), true), id, k, pos);
   commit();
   const after = stage(id);
   toast(after > before ? `${nodeById.get(id).name} reached ${STAGES[after]}` : `Logged ${KINDS[k].toLowerCase()} for today`);
 }
 function clearToday(id) {
   const s = sessionFor(todayISO(), false); if (!s) return;
-  delete s.items[id];
+  Object.keys(s.items).forEach(k => { if (splitKey(k).id === id) delete s.items[k]; });
   if (!Object.keys(s.items).length) data.sessions = data.sessions.filter(x => x !== s);
   commit();
 }
@@ -685,7 +729,7 @@ function reachable(n) {
   return n.from.some(h => h === "standing" || hubActive(hubById.get(h)));
 }
 function mapState(n) {
-  if (n.hub) return TECHS.some(t => (t.from.includes(n.id) || t.to === n.id) && stage(t.id) >= 2) ? "learned" : reachable(n) ? "reach" : "locked";
+  if (n.hub) return TECHS.some(t => (t.from.includes(n.id) && posStage(t.id, n.id) >= 2) || (t.to === n.id && stage(t.id) >= 2)) ? "learned" : reachable(n) ? "reach" : "locked";
   const s = stage(n.id);
   return s >= 2 ? "learned" : (s === 1 || reachable(n)) ? "reach" : "locked";
 }
@@ -772,7 +816,7 @@ function renderMap() {
   tLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
   toLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
   hubLinkSel.classed("hl", d => !!rel && (d[0] === selected || d[1] === selected));
-  tLinkSel.classed("lit", d => stage(d.t.id) >= 2 && hubActive(d.h));
+  tLinkSel.classed("lit", d => posStage(d.t.id, d.h.id) >= 2);
   toLinkSel.classed("lit", d => stage(d.t.id) >= 3);
   hubLinkSel.classed("lit", d => mapState(hubById.get(d[0])) === "learned" && mapState(hubById.get(d[1])) === "learned");
 }
@@ -869,10 +913,12 @@ function renderDexOld() {
   dexEl.querySelectorAll("[data-id]").forEach(b => b.onclick = () => select(b.dataset.id));
 }
 const panel = document.getElementById("panel");
-function chip(id) {
-  const n = nodeById.get(id);
-  return `<button data-go="${n.id}" class="${!n.hub && stage(n.id) >= 3 ? "is-hit" : ""}">${icon(n, 12)}${esc(n.name)}${n.hub ? "" : ` ${pips(stage(n.id))}`}</button>`;
+// With `at`, a move's pips show its stage from that position only.
+function chip(id, at) {
+  const n = nodeById.get(id), s = n.hub ? 0 : typeof at === "string" ? posStage(id, at) : stage(id);
+  return `<button data-go="${n.id}" class="${s >= 3 ? "is-hit" : ""}">${icon(n, 12)}${esc(n.name)}${n.hub ? "" : ` ${pips(s)}`}</button>`;
 }
+let asking = null; // quick log waiting for "from where?"
 function legend() {
   return `<div class="legend">${Object.entries(TYPES).map(([k, v]) => `${icon({ type: k }, 18)}<span>${v.label}</span>`).join("")}${icon({ hub: true }, 18)}<span>Position</span></div>`;
 }
@@ -887,7 +933,7 @@ function renderPanel() {
       <button class="primary" id="panelLog">Log a session</button>
       ${(() => { const g = gaps(); return g.length ? `<div class="gaps"><strong>Gaps in your game</strong>${g.map(x => `<button data-id="${x.id}">${esc(x.text)}</button>`).join("")}</div>` : ""; })()}
       <h3>Recent sessions</h3>
-      ${recent.length ? `<div class="sessions">${recent.map(s => `<div class="sess"><div><b>${fmtDate(s.d)}</b> <span>· ${Object.keys(s.items).length} moves</span></div><button class="linkbtn" data-del="${s.id}">Remove</button></div>`).join("")}</div>` : `<p class="empty">No sessions yet. Your first log will show up here.</p>`}
+      ${recent.length ? `<div class="sessions">${recent.map(s => `<div class="sess"><div><b>${fmtDate(s.d)}</b> <span>· ${movesIn(s).length} move${movesIn(s).length === 1 ? "" : "s"}</span></div><button class="linkbtn" data-del="${s.id}">Remove</button></div>`).join("")}</div>` : `<p class="empty">No sessions yet. Your first log will show up here.</p>`}
       <h3>Key</h3>${legend()}`;
     panel.querySelector("#panelLog").onclick = () => openLog();
     panel.querySelectorAll(".gaps [data-id]").forEach(b => b.onclick = () => select(b.dataset.id));
@@ -901,7 +947,7 @@ function renderPanel() {
     const rows = scorecard(n), active = hubActive(n);
     const groups = Object.keys(TYPES).map(k => {
       const ts = TECHS.filter(t => t.type === k && t.from.includes(n.id));
-      return ts.length ? `<h3>${TYPES[k].plural} from here (${ts.length})</h3><div class="links">${ts.map(t => chip(t.id)).join("")}</div>` : "";
+      return ts.length ? `<h3>${TYPES[k].plural} from here (${ts.length})</h3><div class="links">${ts.map(t => chip(t.id, n.id)).join("")}</div>` : "";
     }).join("");
     const arrive = TECHS.filter(t => t.to === n.id);
     const nb = HUB_LINKS.filter(l => l.includes(n.id)).map(l => l[0] === n.id ? l[1] : l[0]);
@@ -914,15 +960,18 @@ function renderPanel() {
       ${nb.length ? `<h3>Connected positions</h3><div class="links">${nb.map(chip).join("")}</div>` : ""}`;
   } else {
     const s = stage(n.id), st = stats(n.id), rel = relatedMoves(n), cmb = combos(n);
-    const today = sessionFor(todayISO(), false), ti = today && today.items[n.id];
+    const today = sessionFor(todayISO(), false);
+    const ti = today ? Object.entries(today.items).map(([k, it]) => ({ ...splitKey(k), k: it.k })).filter(x => x.id === n.id) : [];
+    const lp = lastPos(n.id), order = lp && n.from.includes(lp) ? [lp, ...n.from.filter(f => f !== lp)] : n.from;
     panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span class="tag t-${n.type}">${TYPES[n.type].label}</span>${n.gi ? "<span>Gi only</span>" : ""}</div>
       <div class="portrait t-${n.type}${s ? "" : " dim"}"><svg width="96" height="96" viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="3 5"/><path d="${d3.symbol(TYPES[n.type].sym, 900)()}" fill="currentColor"/></svg></div>
       <h2>${esc(n.name)}</h2><p>${esc(n.note)}</p>
       <div class="stagebox">
         <div class="stagehead"><b>${STAGES[s]}</b>${pips(s)}</div>
         <p class="next">${nextStep(n.id)}</p>
-        <div class="qlog"><button data-k="seen">+ Seen</button><button data-k="drilled">+ Drilled</button><button data-k="hit">+ Hit live</button></div>
-        ${ti ? `<div class="today"><span>Today: ${KINDS[ti.k]}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
+        <div class="qlog">${Object.entries(KINDS).map(([k, l]) => `<button data-k="${k}" aria-expanded="${asking === k}">+ ${l}</button>`).join("")}</div>
+        ${asking ? `<div class="ask"><b>${KINDS[asking]} from where?</b><div class="links">${order.map(h => `<button data-pos="${h}">${esc(hubById.get(h).name)}</button>`).join("")}</div></div>` : ""}
+        ${ti.length ? `<div class="today"><span>Today: ${ti.map(x => `${KINDS[x.k]}${x.pos ? ` from ${esc(hubById.get(x.pos)?.name || x.pos)}` : ""}`).join(" · ")}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
         <p class="next days" aria-label="Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days"><span class="dots" aria-hidden="true">${Array.from({ length: RULES.masterDays }, (_, i) => `<i class="${i < st.hitS ? "f" : ""}"></i>`).join("")}</span> Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days</p>
         <p class="next">${st.seenS ? `Logged in ${st.seenS} session${st.seenS > 1 ? "s" : ""} · last ${fmtDate(st.last)}` : "Not logged yet."}</p>
         <label class="basesel" for="base">Already know it?<select id="base">${STAGES.map((l, i) => `<option value="${i}"${(data.base[n.id] || 0) === i ? " selected" : ""}>${i ? "Start at " + l : "No starting stage"}</option>`).join("")}</select></label>
@@ -933,11 +982,20 @@ function renderPanel() {
         ["Combos", cmb.length, MAXCMB],
         ["Days hit live", st.hitS, RULES.masterDays]
       ].map(([l, v, m]) => `<div class="srow"><span>${l}</span><span class="sbar"><i style="width:${Math.min(100, 100 * v / m)}%"></i></span><span>${v}</span></div>`).join("")}</div>
-      <h3>Related positions · works from (${n.from.length})</h3><div class="links">${n.from.map(chip).join("")}</div>
+      <h3>By position · works from (${n.from.length})</h3><div class="bypos">${n.from.map(h => {
+        const ps = stats(n.id, h), ds = derived(ps);
+        const txt = ps.hitS ? `Hit live on ${ps.hitS} day${ps.hitS > 1 ? "s" : ""}` : ds === 2 ? "Drilled" : ds === 1 ? "Seen" : "Not logged";
+        return `<button class="posline${ds >= 3 ? " hit" : ""}" data-go="${h}"><span>${esc(hubById.get(h).name)}</span><span class="st">${txt}</span>${pips(ds)}</button>`;
+      }).join("")}</div>
       ${n.to ? `<h3>Leads to</h3><div class="links">${chip(n.to)}</div>` : ""}
       ${cmb.length ? `<h3>Combos with</h3><div class="links">${cmb.map(chip).join("")}</div>` : ""}
       ${rel.length ? `<h3>Related moves</h3><div class="links">${rel.map(chip).join("")}</div>` : ""}`;
-    panel.querySelectorAll("[data-k]").forEach(b => b.onclick = () => quickLog(n.id, b.dataset.k));
+    // Quick log asks where it started from, unless the move has only one position.
+    panel.querySelectorAll(".qlog [data-k]").forEach(b => b.onclick = () => {
+      if (n.from.length === 1) return quickLog(n.id, b.dataset.k, n.from[0]);
+      asking = asking === b.dataset.k ? null : b.dataset.k; renderPanel();
+    });
+    panel.querySelectorAll("[data-pos]").forEach(b => b.onclick = () => quickLog(n.id, asking, b.dataset.pos));
     const ct = panel.querySelector("#clearToday"); if (ct) ct.onclick = () => clearToday(n.id);
     panel.querySelector("#base").onchange = e => { const v = +e.target.value; if (v) data.base[n.id] = v; else delete data.base[n.id]; commit(); };
   }
@@ -946,6 +1004,7 @@ function renderPanel() {
   panel.querySelector("#backBtn").onclick = () => select(null);
 }
 function select(id) {
+  if (id !== selected) asking = null;
   selected = id;
   const n = id && nodeById.get(id);
   if (n && view === "dex") listTab = n.hub ? "positions" : "moves";
@@ -985,11 +1044,16 @@ document.getElementById("find").addEventListener("change", e => {
 
 // ---------- Session log sheet ----------
 const sheet = document.getElementById("logSheet");
-let draft = new Map(), lastFocus = null;
+// Picked rows: { uid, id, k, pos }. The same move can be added again from another position.
+let draft = [], lastFocus = null, uidSeq = 1;
+function newRow(id, k = "drilled") {
+  const from = nodeById.get(id).from, lp = lastPos(id);
+  return { uid: uidSeq++, id, k, pos: from.length === 1 ? from[0] : lp && from.includes(lp) ? lp : null };
+}
 function openLog() {
   lastFocus = document.activeElement;
-  draft = new Map();
-  if (selected && !nodeById.get(selected).hub) draft.set(selected, { k: "drilled" });
+  draft = [];
+  if (selected && !nodeById.get(selected).hub) draft.push(newRow(selected));
   document.getElementById("logDate").value = todayISO();
   document.getElementById("logSearch").value = "";
   sheet.hidden = false; renderSheet();
@@ -998,19 +1062,34 @@ function openLog() {
 function closeLog() { sheet.hidden = true; lastFocus?.focus?.(); }
 function renderSheet() {
   const q = document.getElementById("logSearch").value.trim().toLowerCase();
-  const res = q ? TECHS.filter(t => !draft.has(t.id) && t.name.toLowerCase().includes(q)).slice(0, 7) : [];
+  const inDraft = new Set(draft.map(r => r.id));
+  const res = q ? TECHS.filter(t => !inDraft.has(t.id) && t.name.toLowerCase().includes(q)).slice(0, 7) : [];
   document.getElementById("logResults").innerHTML = res.map(t => `<button data-add="${t.id}">${icon(t)}${esc(t.name)} <span class="status">${TYPES[t.type].label}</span></button>`).join("");
-  const recentIds = [...new Set(data.sessions.slice(-4).reverse().flatMap(s => Object.keys(s.items)))].filter(id => !draft.has(id)).slice(0, 10);
+  const recentIds = [...new Set(data.sessions.slice(-4).reverse().flatMap(movesIn))].filter(id => !inDraft.has(id)).slice(0, 10);
   document.getElementById("logRecent").innerHTML = !q && recentIds.length
     ? `<div class="field">Recent<div class="links">${recentIds.map(id => `<button data-add="${id}">${icon(nodeById.get(id), 12)}${esc(nodeById.get(id).name)}</button>`).join("")}</div></div>` : "";
-  document.getElementById("logPicked").innerHTML = [...draft].map(([id, v]) => `<div class="prow">
-      <span class="nm">${icon(nodeById.get(id))}${esc(nodeById.get(id).name)}</span><button class="x" data-rm="${id}" aria-label="Remove ${esc(nodeById.get(id).name)}">✕</button>
-      <div class="ctrl"><span class="seg" role="group" aria-label="What you did">${Object.entries(KINDS).map(([k, l]) => `<button data-set="${id}" data-k="${k}" aria-pressed="${v.k === k}">${l}</button>`).join("")}</span></div></div>`).join("");
-  document.getElementById("logCount").textContent = draft.size ? `${draft.size} move${draft.size > 1 ? "s" : ""} in this session` : "Nothing added yet";
-  document.getElementById("saveLog").disabled = !draft.size;
-  sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.set(b.dataset.add, { k: "drilled" }); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
-  sheet.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { draft.delete(b.dataset.rm); renderSheet(); });
-  sheet.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { draft.get(b.dataset.set).k = b.dataset.k; renderSheet(); });
+  const row = uid => draft.find(r => r.uid === +uid);
+  document.getElementById("logPicked").innerHTML = draft.map(r => {
+    const n = nodeById.get(r.id), used = new Set(draft.filter(x => x.id === r.id && x.uid !== r.uid).map(x => x.pos));
+    const free = n.from.filter(h => !used.has(h));
+    return `<div class="prow">
+      <span class="nm">${icon(n)}${esc(n.name)}</span><button class="x" data-rm="${r.uid}" aria-label="Remove ${esc(n.name)}">✕</button>
+      <div class="ctrl"><span class="seg" role="group" aria-label="What you did">${Object.entries(KINDS).map(([k, l]) => `<button data-set="${r.uid}" data-k="${k}" aria-pressed="${r.k === k}">${l}</button>`).join("")}</span></div>
+      <div class="from"><span class="fromlbl${r.pos ? "" : " need"}">${r.pos ? "From" : "From where?"}</span><span class="posrow" role="group" aria-label="Where ${esc(n.name)} started from">${free.map(h => `<button data-row="${r.uid}" data-pos="${h}" aria-pressed="${r.pos === h}">${esc(hubById.get(h).name)}</button>`).join("")}</span>
+      ${free.length > 1 ? `<button class="linkbtn another" data-another="${r.uid}">+ Also from another position</button>` : ""}</div></div>`;
+  }).join("");
+  const missing = draft.filter(r => !r.pos).length;
+  document.getElementById("logCount").textContent = !draft.length ? "Nothing added yet" : missing ? `Pick where ${missing === 1 ? "1 move" : missing + " moves"} started` : `${draft.length} ${draft.length > 1 ? "entries" : "entry"} in this session`;
+  document.getElementById("saveLog").disabled = !draft.length || missing > 0;
+  sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.push(newRow(b.dataset.add)); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
+  sheet.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { draft = draft.filter(r => r.uid !== +b.dataset.rm); renderSheet(); });
+  sheet.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { row(b.dataset.set).k = b.dataset.k; renderSheet(); });
+  sheet.querySelectorAll("[data-row]").forEach(b => b.onclick = () => { row(b.dataset.row).pos = b.dataset.pos; renderSheet(); });
+  sheet.querySelectorAll("[data-another]").forEach(b => b.onclick = () => {
+    const r = row(b.dataset.another), used = new Set(draft.filter(x => x.id === r.id).map(x => x.pos));
+    const free = nodeById.get(r.id).from.filter(h => !used.has(h));
+    draft.push({ uid: uidSeq++, id: r.id, k: r.k, pos: free.length === 1 ? free[0] : null }); renderSheet();
+  });
 }
 document.getElementById("logSearch").addEventListener("input", renderSheet);
 document.getElementById("logSearch").addEventListener("keydown", e => { if (e.key === "Enter") { const b = sheet.querySelector("#logResults [data-add]"); if (b) { e.preventDefault(); b.click(); } } });
@@ -1022,11 +1101,12 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hid
 document.getElementById("saveLog").onclick = () => {
   const d = document.getElementById("logDate").value || todayISO();
   const before = new Map(TECHS.map(t => [t.id, stage(t.id)]));
+  if (!draft.length || draft.some(r => !r.pos)) return;
   const s = sessionFor(d, true);
-  draft.forEach((v, id) => addItem(s, id, v.k));
+  draft.forEach(r => addItem(s, r.id, r.k, r.pos));
   commit(); closeLog();
-  const ups = [...draft.keys()].filter(id => stage(id) > before.get(id));
-  toast(ups.length ? `Saved · ${ups.length} move${ups.length > 1 ? "s" : ""} levelled up` : `Saved · ${draft.size} move${draft.size > 1 ? "s" : ""} logged`);
+  const ids = [...new Set(draft.map(r => r.id))], ups = ids.filter(id => stage(id) > before.get(id));
+  toast(ups.length ? `Saved · ${ups.length} move${ups.length > 1 ? "s" : ""} levelled up` : `Saved · ${ids.length} move${ids.length > 1 ? "s" : ""} logged`);
 };
 
 // ---------- Saving: your account when available, this browser otherwise ----------

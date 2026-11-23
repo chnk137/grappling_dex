@@ -23,6 +23,7 @@ After class, log what you worked on in a few taps: what you were taught, what yo
 
 • 85 techniques across 31 positions: submissions, sweeps, passes, escapes and transitions, with leg locks broken out by entry
 • Every move links to the positions it works from, the moves it chains into, and related techniques
+• Log where each move came from, so a triangle from closed guard counts for closed guard, not every position it can start from
 • A scorecard for each position: what you can attack, pass, escape and sweep from there
 • "Gaps in your game" points to positions where you spend time but can't yet do anything
 • Fast logging made for right after training, with your recent moves one tap away

@@ -3,9 +3,10 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { techniques } from '../data/catalog';
 import { colors } from '../theme';
 import * as db from './db';
-import { addItem, localDate, stageOf, type Kind, type Progress, type Session, type Stage } from './progress';
+import { addItem, localDate, removeMove, stageOf, type Kind, type Progress, type Session, type Stage } from './progress';
 
-export interface LogEntry { moveId: string; kind: Kind }
+/** One logged move. `pos` is the position it started from. */
+export interface LogEntry { moveId: string; kind: Kind; pos?: string | null }
 
 interface Store {
   progress: Progress;
@@ -44,7 +45,7 @@ function LoadedProvider({ initial, children }: { initial: Progress; children: Re
   const logMoves = useCallback((date: string, entries: LogEntry[]) => {
     const before = new Map(entries.map(e => [e.moveId, stageOf(progress, e.moveId)]));
     let s = progress.sessions.find(x => x.date === date) ?? newSession(date);
-    for (const e of entries) s = addItem(s, e.moveId, e.kind);
+    for (const e of entries) s = addItem(s, e.moveId, e.kind, e.pos);
     db.saveSession(s);
     const next = db.loadProgress();
     setProgress(next);
@@ -54,9 +55,7 @@ function LoadedProvider({ initial, children }: { initial: Progress; children: Re
   const clearToday = useCallback((moveId: string) => {
     const s = progress.sessions.find(x => x.date === localDate());
     if (!s) return;
-    const items = { ...s.items };
-    delete items[moveId];
-    db.saveSession({ ...s, items });
+    db.saveSession(removeMove(s, moveId));
     setProgress(db.loadProgress());
   }, [progress]);
 
