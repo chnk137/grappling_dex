@@ -243,6 +243,7 @@ aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1e
 .prow.need { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass); }
 .primary:disabled { opacity: .4; cursor: default; }
 #logCount.warn { color: var(--brass); font-weight: 700; }
+.build { display: block; opacity: .45; font-size: 10px; letter-spacing: .06em; margin-top: 2px; }
 .prow .nm { font-weight: 600; display: flex; gap: 8px; align-items: center; min-width: 0; }
 .prow .ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; grid-column: 1 / -1; }
 .prow .from { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
@@ -388,7 +389,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status" id="logCount">Nothing added yet</span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 10</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -1109,6 +1110,12 @@ document.getElementById("cancelLog").onclick = closeLog;
 sheet.addEventListener("click", e => { if (e.target === sheet) closeLog(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !sheet.hidden) closeLog(); });
 document.getElementById("saveLog").onclick = () => {
+  try { saveSession(); } catch (e) { toast("Couldn't save: " + (e && e.message || e)); console.error(e); }
+};
+// Any other error is shown instead of failing silently.
+window.addEventListener("error", e => toast("Something went wrong: " + (e.message || "unknown error")));
+window.addEventListener("unhandledrejection", e => toast("Couldn't sync: " + ((e.reason && e.reason.message) || e.reason || "unknown error")));
+function saveSession() {
   const d = document.getElementById("logDate").value || todayISO();
   const before = new Map(TECHS.map(t => [t.id, stage(t.id)]));
   if (!draft.length) return;
@@ -1141,7 +1148,7 @@ async function flush() {
   if (writing) { again = true; return; }
   writing = true;
   try { await ref.set({ v: 2, sessions: data.sessions, base: data.base, updatedAt: data.updatedAt || Date.now() }); syncEl.textContent = "Saved to your account"; }
-  catch (e) { syncEl.textContent = "Saved in this browser only"; }
+  catch (e) { syncEl.textContent = "Saved in this browser only"; toast("Couldn't save to your account: " + (e && e.message || e)); }
   writing = false;
   if (again) { again = false; flush(); }
 }
