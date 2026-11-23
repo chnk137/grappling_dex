@@ -389,7 +389,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 10</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 11</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -1166,7 +1166,8 @@ async function flush() {
       const d = snap.data();
       const pending = snap.metadata && snap.metadata.hasPendingWrites;
       if (d && d.v === 2 && Array.isArray(d.sessions)) {
-        if (!pending) { data = { v: 2, sessions: d.sessions, base: d.base || {}, updatedAt: d.updatedAt }; recompute(); refresh(); }
+        // The account copy arrives read-only (frozen), so work on a deep copy we can change.
+        if (!pending) { const copy = JSON.parse(JSON.stringify(d)); data = { v: 2, sessions: copy.sessions, base: copy.base || {}, updatedAt: copy.updatedAt }; recompute(); refresh(); }
       } else if (first) {
         if (d && Array.isArray(d.learned)) d.learned.forEach(x => { const n = nodeById.get(x); if (n && !n.hub && !data.base[x]) data.base[x] = 2; });
         if (data.sessions.length || Object.keys(data.base).length) { recompute(); refresh(); flush(); }
