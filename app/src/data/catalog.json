@@ -217,6 +217,69 @@
    "tier": "dom",
    "x": 440,
    "y": 1490
+  },
+  {
+   "id": "shin",
+   "name": "Shin-to-shin",
+   "tier": "guard",
+   "x": 600,
+   "y": 170
+  },
+  {
+   "id": "waiterGuard",
+   "name": "Waiter guard",
+   "tier": "guard",
+   "x": 1560,
+   "y": 430
+  },
+  {
+   "id": "octopus",
+   "name": "Octopus guard",
+   "tier": "guard",
+   "x": 1050,
+   "y": 150
+  },
+  {
+   "id": "worm",
+   "name": "Worm guard",
+   "tier": "guard",
+   "x": 790,
+   "y": 600
+  },
+  {
+   "id": "hq",
+   "name": "Headquarters (HQ)",
+   "tier": "pass",
+   "x": 1560,
+   "y": 640
+  },
+  {
+   "id": "bodyLockTop",
+   "name": "Body lock (passing)",
+   "tier": "pass",
+   "x": 1590,
+   "y": 880
+  },
+  {
+   "id": "legDragTop",
+   "name": "Leg drag (top)",
+   "tier": "pass",
+   "x": 170,
+   "y": 760
+  },
+  {
+   "id": "crabRide",
+   "name": "Crab ride",
+   "tier": "dom",
+   "x": 30,
+   "y": 1110
+  },
+  {
+   "id": "frontHeadlock",
+   "name": "Front headlock",
+   "tier": "pin",
+   "x": 60,
+   "y": 1280
   }
  ],
  "positionLinks": [
@@ -415,6 +478,146 @@
   [
    "back",
    "mount"
+  ],
+  [
+   "standing",
+   "shin"
+  ],
+  [
+   "shin",
+   "dlr"
+  ],
+  [
+   "shin",
+   "slx"
+  ],
+  [
+   "shin",
+   "butterfly"
+  ],
+  [
+   "shin",
+   "lasso"
+  ],
+  [
+   "shin",
+   "kguard"
+  ],
+  [
+   "lasso",
+   "dlr"
+  ],
+  [
+   "lasso",
+   "kguard"
+  ],
+  [
+   "kguard",
+   "dlr"
+  ],
+  [
+   "deepHalf",
+   "waiterGuard"
+  ],
+  [
+   "waiterGuard",
+   "slx"
+  ],
+  [
+   "waiterGuard",
+   "saddle"
+  ],
+  [
+   "half",
+   "octopus"
+  ],
+  [
+   "octopus",
+   "back"
+  ],
+  [
+   "worm",
+   "dlr"
+  ],
+  [
+   "worm",
+   "rdlr"
+  ],
+  [
+   "hq",
+   "half"
+  ],
+  [
+   "hq",
+   "kneeShield"
+  ],
+  [
+   "hq",
+   "dlr"
+  ],
+  [
+   "hq",
+   "topHalf"
+  ],
+  [
+   "hq",
+   "side"
+  ],
+  [
+   "bodyLockTop",
+   "butterfly"
+  ],
+  [
+   "bodyLockTop",
+   "half"
+  ],
+  [
+   "bodyLockTop",
+   "topHalf"
+  ],
+  [
+   "bodyLockTop",
+   "mount"
+  ],
+  [
+   "legDragTop",
+   "dlr"
+  ],
+  [
+   "legDragTop",
+   "rdlr"
+  ],
+  [
+   "legDragTop",
+   "side"
+  ],
+  [
+   "legDragTop",
+   "back"
+  ],
+  [
+   "crabRide",
+   "dlr"
+  ],
+  [
+   "crabRide",
+   "back"
+  ],
+  [
+   "crabRide",
+   "turtle"
+  ],
+  [
+   "standing",
+   "frontHeadlock"
+  ],
+  [
+   "frontHeadlock",
+   "turtle"
+  ],
+  [
+   "frontHeadlock",
+   "back"
   ]
  ],
  "techniques": [
@@ -504,7 +707,8 @@
     "closed",
     "butterfly",
     "turtle",
-    "standing"
+    "standing",
+    "frontHeadlock"
    ],
    "to": null,
    "note": "Front choke when the head drops. Arm-in version from butterfly.",
@@ -644,7 +848,8 @@
    "type": "sub",
    "from": [
     "turtle",
-    "standing"
+    "standing",
+    "frontHeadlock"
    ],
    "to": null,
    "note": "Front headlock choke, arm threaded under the arm.",
@@ -656,7 +861,8 @@
    "type": "sub",
    "from": [
     "turtle",
-    "standing"
+    "standing",
+    "frontHeadlock"
    ],
    "to": null,
    "note": "Front headlock choke, roll to finish.",
@@ -940,7 +1146,8 @@
    "name": "Waiter sweep",
    "type": "sweep",
    "from": [
-    "deepHalf"
+    "deepHalf",
+    "waiterGuard"
    ],
    "to": "side",
    "note": "Lift the leg and come up.",
@@ -963,7 +1170,8 @@
    "type": "sweep",
    "from": [
     "xguard",
-    "slx"
+    "slx",
+    "shin"
    ],
    "to": "standing",
    "note": "Kick the hooks, stand up in base holding the leg.",
@@ -1079,7 +1287,8 @@
     "half",
     "kneeShield",
     "dlr",
-    "butterfly"
+    "butterfly",
+    "hq"
    ],
    "to": "side",
    "note": "Cut the knee through with an underhook or crossface.",
@@ -1091,7 +1300,8 @@
    "type": "pass",
    "from": [
     "dlr",
-    "rdlr"
+    "rdlr",
+    "hq"
    ],
    "to": "side",
    "note": "Pin the legs to one side. Chains to the back.",
@@ -1126,7 +1336,8 @@
    "type": "pass",
    "from": [
     "butterfly",
-    "half"
+    "half",
+    "bodyLockTop"
    ],
    "to": "side",
    "note": "Hug the hips and flatten them.",
@@ -1148,7 +1359,8 @@
    "name": "Smash pass",
    "type": "pass",
    "from": [
-    "butterfly"
+    "butterfly",
+    "bodyLockTop"
    ],
    "to": "side",
    "note": "Fold the legs to one side.",
@@ -1343,7 +1555,7 @@
    "from": [
     "standing"
    ],
-   "to": "turtle",
+   "to": "frontHeadlock",
    "note": "Front headlock, then go behind or choke.",
    "gi": false
   },
@@ -1437,6 +1649,283 @@
    "to": null,
    "note": "Wrestling reversal to get on top.",
    "gi": false
+  },
+  {
+   "id": "shinSweep",
+   "name": "Shin-to-shin sweep",
+   "type": "sweep",
+   "from": [
+    "shin"
+   ],
+   "to": "standing",
+   "note": "Off-balance them over your shin hook and come up on their leg.",
+   "gi": false
+  },
+  {
+   "id": "shinToSlx",
+   "name": "Shin-to-shin to single leg X",
+   "type": "move",
+   "from": [
+    "shin"
+   ],
+   "to": "slx",
+   "note": "Slide under the hips from the shin hook into single leg X.",
+   "gi": false
+  },
+  {
+   "id": "lassoK",
+   "name": "Lasso K-guard entry",
+   "type": "move",
+   "from": [
+    "shin",
+    "lasso"
+   ],
+   "to": "kguard",
+   "note": "Lasso the arm, then thread the K hook across their hips.",
+   "gi": false
+  },
+  {
+   "id": "kToDlr",
+   "name": "K-guard to De La Riva",
+   "type": "move",
+   "from": [
+    "kguard"
+   ],
+   "to": "dlr",
+   "note": "Pull the K hook back outside the hip and recover De La Riva.",
+   "gi": false
+  },
+  {
+   "id": "kToSaddle",
+   "name": "K-guard to saddle",
+   "type": "move",
+   "from": [
+    "kguard"
+   ],
+   "to": "saddle",
+   "note": "Spin under and triangle the legs for inside sankaku.",
+   "gi": false
+  },
+  {
+   "id": "bearTrap",
+   "name": "Bear trap",
+   "type": "sub",
+   "from": [
+    "dlr",
+    "butterfly",
+    "shin"
+   ],
+   "to": null,
+   "note": "Leg entanglement that stops their guard, finished as a calf-slicer–style compression or used to pass.",
+   "gi": false
+  },
+  {
+   "id": "tarikoplata",
+   "name": "Tarikoplata",
+   "type": "sub",
+   "from": [
+    "closed",
+    "side"
+   ],
+   "to": null,
+   "note": "Shoulder lock: trap their arm behind their back from a kimura or omoplata, then crank.",
+   "gi": false
+  },
+  {
+   "id": "baratoplata",
+   "name": "Baratoplata",
+   "type": "sub",
+   "from": [
+    "closed"
+   ],
+   "to": null,
+   "note": "Shoulder lock from an omoplata when they posture or hide the arm.",
+   "gi": false
+  },
+  {
+   "id": "japaneseNecktie",
+   "name": "Japanese necktie",
+   "type": "sub",
+   "from": [
+    "turtle",
+    "frontHeadlock"
+   ],
+   "to": null,
+   "note": "Front-headlock choke: sprawl your chest across their head and squeeze.",
+   "gi": false
+  },
+  {
+   "id": "vonFlue",
+   "name": "Von Flue choke",
+   "type": "sub",
+   "from": [
+    "side"
+   ],
+   "to": null,
+   "note": "When they keep a guillotine from bottom, drive your shoulder into their neck.",
+   "gi": false
+  },
+  {
+   "id": "buggy",
+   "name": "Buggy choke",
+   "type": "sub",
+   "from": [
+    "side"
+   ],
+   "to": null,
+   "note": "Choke from bottom side control: triangle your legs and lock hands around the head and arm.",
+   "gi": false
+  },
+  {
+   "id": "wristlock",
+   "name": "Wristlock",
+   "type": "sub",
+   "from": [
+    "closed",
+    "side",
+    "mount"
+   ],
+   "to": null,
+   "note": "Bend the wrist against the forearm. Fast, so tap early.",
+   "gi": false
+  },
+  {
+   "id": "bananaSplit",
+   "name": "Banana split",
+   "type": "sub",
+   "from": [
+    "truck"
+   ],
+   "to": null,
+   "note": "Split the legs from the truck. Hips and groin, not a joint.",
+   "gi": false
+  },
+  {
+   "id": "backTriangle",
+   "name": "Back triangle",
+   "type": "sub",
+   "from": [
+    "back"
+   ],
+   "to": null,
+   "note": "Triangle the legs around head and arm from the back.",
+   "gi": false
+  },
+  {
+   "id": "highElbowGuillotine",
+   "name": "High-elbow guillotine",
+   "type": "sub",
+   "from": [
+    "standing",
+    "frontHeadlock",
+    "closed",
+    "butterfly"
+   ],
+   "to": null,
+   "note": "Arm-in guillotine with your elbow high; rotate the wrist into the neck.",
+   "gi": false
+  },
+  {
+   "id": "crabBack",
+   "name": "Crab ride back take",
+   "type": "move",
+   "from": [
+    "crabRide"
+   ],
+   "to": "back",
+   "note": "Hook the far leg from crab ride, then come up to the back.",
+   "gi": false
+  },
+  {
+   "id": "legDragBack",
+   "name": "Leg drag back take",
+   "type": "move",
+   "from": [
+    "legDragTop"
+   ],
+   "to": "back",
+   "note": "When they turn away from the leg drag, take the back.",
+   "gi": false
+  },
+  {
+   "id": "longStep",
+   "name": "Long step pass",
+   "type": "pass",
+   "from": [
+    "hq",
+    "half",
+    "kneeShield"
+   ],
+   "to": "side",
+   "note": "Step the far leg back over their legs and settle in side control.",
+   "gi": false
+  },
+  {
+   "id": "legWeave",
+   "name": "Leg weave pass",
+   "type": "pass",
+   "from": [
+    "hq",
+    "half"
+   ],
+   "to": "side",
+   "note": "Weave your arm through to pin their legs, then pass.",
+   "gi": false
+  },
+  {
+   "id": "goBehind",
+   "name": "Go-behind",
+   "type": "move",
+   "from": [
+    "frontHeadlock"
+   ],
+   "to": "back",
+   "note": "Circle off the front headlock to their back.",
+   "gi": false
+  },
+  {
+   "id": "waiterSlx",
+   "name": "Waiter to single leg X",
+   "type": "move",
+   "from": [
+    "waiterGuard"
+   ],
+   "to": "slx",
+   "note": "Lift their leg from waiter and switch to single leg X.",
+   "gi": false
+  },
+  {
+   "id": "octopusBack",
+   "name": "Octopus back take",
+   "type": "move",
+   "from": [
+    "octopus"
+   ],
+   "to": "back",
+   "note": "Reach across their back from half guard and climb to the back.",
+   "gi": false
+  },
+  {
+   "id": "octopusSweep",
+   "name": "Octopus sweep",
+   "type": "sweep",
+   "from": [
+    "octopus"
+   ],
+   "to": "side",
+   "note": "Drive into them from the octopus grip and come up on top.",
+   "gi": false
+  },
+  {
+   "id": "wormSweep",
+   "name": "Worm guard sweep",
+   "type": "sweep",
+   "from": [
+    "worm"
+   ],
+   "to": "side",
+   "note": "Lapel through the leg locks their foot; off-balance and come up.",
+   "gi": true
   }
  ],
  "chains": [
@@ -1531,6 +2020,62 @@
   ],
   [
    "seatbelt",
+   "rnc"
+  ],
+  [
+   "lassoK",
+   "kToDlr"
+  ],
+  [
+   "shinToSlx",
+   "straightAnkle"
+  ],
+  [
+   "shinSweep",
+   "shinToSlx"
+  ],
+  [
+   "bearTrap",
+   "calfSlicer"
+  ],
+  [
+   "kToSaddle",
+   "insideHeel"
+  ],
+  [
+   "crabBack",
+   "rnc"
+  ],
+  [
+   "legDragBack",
+   "rnc"
+  ],
+  [
+   "goBehind",
+   "rnc"
+  ],
+  [
+   "japaneseNecktie",
+   "darce"
+  ],
+  [
+   "kimura",
+   "tarikoplata"
+  ],
+  [
+   "omoplata",
+   "baratoplata"
+  ],
+  [
+   "legWeave",
+   "kneeSlice"
+  ],
+  [
+   "waiterSlx",
+   "straightAnkle"
+  ],
+  [
+   "octopusBack",
    "rnc"
   ]
  ]

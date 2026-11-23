@@ -389,7 +389,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 11</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 12</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -404,7 +404,7 @@ const TYPES = {
   move:   { label: "Transition", plural: "Transitions", sym: d3.symbolDiamond },
   escape: { label: "Escape", plural: "Escapes", sym: d3.symbolWye }
 };
-const TIERS = { stand: "Standing", guard: "Guard · bottom", leg: "Leg entanglement", pin: "Pin · top", dom: "Dominant · top" };
+const TIERS = { stand: "Standing", guard: "Guard · bottom", leg: "Leg entanglement", pass: "Passing · top", pin: "Pin · top", dom: "Dominant · top" };
 
 const HUBS = [
   ["standing","Standing","stand",760,70],
@@ -437,7 +437,17 @@ const HUBS = [
   ["mount","Mount","dom",900,1440],
   ["sMount","High / S-mount","dom",1150,1490],
   ["techMount","Technical mount","dom",680,1470],
-  ["back","Back","dom",440,1490]
+  ["back","Back","dom",440,1490],
+  // Newer positions (added at the end so existing P-numbers don't change)
+  ["shin","Shin-to-shin","guard",600,170],
+  ["waiterGuard","Waiter guard","guard",1560,430],
+  ["octopus","Octopus guard","guard",1050,150],
+  ["worm","Worm guard","guard",790,600],
+  ["hq","Headquarters (HQ)","pass",1560,640],
+  ["bodyLockTop","Body lock (passing)","pass",1590,880],
+  ["legDragTop","Leg drag (top)","pass",170,760],
+  ["crabRide","Crab ride","dom",30,1110],
+  ["frontHeadlock","Front headlock","pin",60,1280]
 ].map(([id,name,tier,x,y]) => ({ id, name, tier, x, y, fx: x, fy: y, hub: true }));
 
 const HUB_LINKS = [
@@ -449,7 +459,16 @@ const HUB_LINKS = [
   ["kguard","saddle"],["kguard","crossAshi"],["half","kneeShield"],["half","deepHalf"],["deepHalf","slx"],
   ["half","slx"],["topHalf","side"],["topHalf","mount"],["side","kob"],["side","ns"],["side","kesa"],
   ["side","mount"],["kob","mount"],["side","crucifix"],["turtle","back"],["turtle","crucifix"],["turtle","truck"],
-  ["truck","back"],["mount","sMount"],["mount","techMount"],["techMount","back"],["back","mount"]
+  ["truck","back"],["mount","sMount"],["mount","techMount"],["techMount","back"],["back","mount"],
+  ["standing","shin"],["shin","dlr"],["shin","slx"],["shin","butterfly"],["shin","lasso"],["shin","kguard"],
+  ["lasso","dlr"],["lasso","kguard"],["kguard","dlr"],
+  ["deepHalf","waiterGuard"],["waiterGuard","slx"],["waiterGuard","saddle"],["half","octopus"],["octopus","back"],
+  ["worm","dlr"],["worm","rdlr"],
+  ["hq","half"],["hq","kneeShield"],["hq","dlr"],["hq","topHalf"],["hq","side"],
+  ["bodyLockTop","butterfly"],["bodyLockTop","half"],["bodyLockTop","topHalf"],["bodyLockTop","mount"],
+  ["legDragTop","dlr"],["legDragTop","rdlr"],["legDragTop","side"],["legDragTop","back"],
+  ["crabRide","dlr"],["crabRide","back"],["crabRide","turtle"],
+  ["standing","frontHeadlock"],["frontHeadlock","turtle"],["frontHeadlock","back"]
 ];
 
 // [id, name, type, works-from positions, leads-to position, note, gi-only]
@@ -459,7 +478,7 @@ const TECHS = [
   ["kimura","Kimura","sub",["closed","half","kneeShield","side","ns","topHalf"],null,"Shoulder lock. Pairs with the hip bump sweep from closed guard."],
   ["omoplata","Omoplata","sub",["closed","spider","lasso","collar"],null,"Shoulder lock with the legs. If they roll out, take top."],
   ["americana","Americana","sub",["closed","side","mount"],null,"Bent-arm shoulder lock, near arm pinned to the mat."],
-  ["guillotine","Guillotine","sub",["closed","butterfly","turtle","standing"],null,"Front choke when the head drops. Arm-in version from butterfly."],
+  ["guillotine","Guillotine","sub",["closed","butterfly","turtle","standing","frontHeadlock"],null,"Front choke when the head drops. Arm-in version from butterfly."],
   ["armTriangle","Arm triangle","sub",["mount","side","topHalf"],null,"Head-and-arm choke. Walk to the far side to finish."],
   ["ezekiel","Ezekiel choke","sub",["closed","mount"],null,"Sleeve choke. Works from inside their closed guard too."],
   ["crossCollar","Cross collar choke","sub",["closed","mount","sMount"],null,"Deep first grip, then the second.",true],
@@ -471,8 +490,8 @@ const TECHS = [
   ["rnc","Rear naked choke","sub",["back"],null,"The main back finish."],
   ["shortChoke","Short choke","sub",["back"],null,"When they defend the full RNC."],
   ["nsChoke","North-south choke","sub",["ns"],null,"Arm-in choke from north-south."],
-  ["darce","D'Arce choke","sub",["turtle","standing"],null,"Front headlock choke, arm threaded under the arm."],
-  ["anaconda","Anaconda choke","sub",["turtle","standing"],null,"Front headlock choke, roll to finish."],
+  ["darce","D'Arce choke","sub",["turtle","standing","frontHeadlock"],null,"Front headlock choke, arm threaded under the arm."],
+  ["anaconda","Anaconda choke","sub",["turtle","standing","frontHeadlock"],null,"Front headlock choke, roll to finish."],
   ["peruvian","Peruvian necktie","sub",["turtle"],null,"Front headlock choke with the legs over the back."],
   ["gogoplata","Gogoplata","sub",["closed"],null,"Shin across the throat from rubber guard or overhook guard."],
   ["kesaLock","Kesa armlock","sub",["kesa"],null,"Trap their arm with your leg and straighten it."],
@@ -496,9 +515,9 @@ const TECHS = [
   ["oldSchool","Old school sweep","sweep",["half"],"side","Underhook and grab the far ankle."],
   ["kneeLever","Knee lever","sweep",["half","rdlr"],"side","Backup when the old school is blocked."],
   ["wrestleUp","Wrestle-up","sweep",["half","kneeShield"],"side","Come up on the underhook to a single leg."],
-  ["waiter","Waiter sweep","sweep",["deepHalf"],"side","Lift the leg and come up."],
+  ["waiter","Waiter sweep","sweep",["deepHalf","waiterGuard"],"side","Lift the leg and come up."],
   ["homer","Homer Simpson sweep","sweep",["deepHalf"],"side","Roll under to come up on top."],
-  ["techStandup","Technical stand-up","sweep",["xguard","slx"],"standing","Kick the hooks, stand up in base holding the leg."],
+  ["techStandup","Technical stand-up","sweep",["xguard","slx","shin"],"standing","Kick the hooks, stand up in base holding the leg."],
   ["overhead","Overhead sweep","sweep",["xguard"],"side","When they lean forward."],
   ["kickOver","Kick-over sweep","sweep",["slx"],"standing","Kick the hip and come up on the leg."],
   ["tripod","Tripod sweep","sweep",["dlr"],"standing","Foot on the hip, pull the ankle."],
@@ -509,13 +528,13 @@ const TECHS = [
   ["fiftySweep","50-50 sweep","sweep",["fifty"],"side","Pull their leg and come up on top."],
 
   ["toreando","Toreando pass","pass",["dlr","spider","lasso","butterfly"],"side","Grip the pants and redirect the legs."],
-  ["kneeSlice","Knee slice","pass",["half","kneeShield","dlr","butterfly"],"side","Cut the knee through with an underhook or crossface."],
-  ["legDrag","Leg drag","pass",["dlr","rdlr"],"side","Pin the legs to one side. Chains to the back."],
+  ["kneeSlice","Knee slice","pass",["half","kneeShield","dlr","butterfly","hq"],"side","Cut the knee through with an underhook or crossface."],
+  ["legDrag","Leg drag","pass",["dlr","rdlr","hq"],"side","Pin the legs to one side. Chains to the back."],
   ["overUnder","Over-under pass","pass",["closed","butterfly"],"side","Pressure pass. Stack and walk around."],
   ["doubleUnder","Double under pass","pass",["closed"],"side","Stack them and pass around a leg."],
-  ["bodyLock","Body lock pass","pass",["butterfly","half"],"side","Hug the hips and flatten them."],
+  ["bodyLock","Body lock pass","pass",["butterfly","half","bodyLockTop"],"side","Hug the hips and flatten them."],
   ["xPass","X-pass","pass",["butterfly"],"side","Push the knees, step around."],
-  ["smash","Smash pass","pass",["butterfly"],"side","Fold the legs to one side."],
+  ["smash","Smash pass","pass",["butterfly","bodyLockTop"],"side","Fold the legs to one side."],
   ["stackPass","Stack pass","pass",["closed","spider","lasso"],"side","Also counters the triangle."],
   ["floatPass","Float pass","pass",["topHalf"],"side","Flatten them and float your hips free."],
   ["mountPass","Mount pass","pass",["topHalf"],"mount","Slide the knee through to mount."],
@@ -533,7 +552,7 @@ const TECHS = [
   ["doubleLeg","Double leg","move",["standing"],"side","Takedown. Usually lands in their guard or side control."],
   ["singleLeg","Single leg","move",["standing"],"side","Takedown off one leg."],
   ["osoto","Osoto gari","move",["standing"],"side","Judo reap."],
-  ["snapDown","Snap down","move",["standing"],"turtle","Front headlock, then go behind or choke."],
+  ["snapDown","Snap down","move",["standing"],"frontHeadlock","Front headlock, then go behind or choke."],
 
   ["upa","Upa (bridge and roll)","escape",["mount","side","kesa"],null,"Trap an arm and leg, bridge over. You end on top."],
   ["elbowKnee","Elbow-knee escape","escape",["mount"],"half","Shrimp to half or full guard."],
@@ -542,7 +561,33 @@ const TECHS = [
   ["ghost","Ghost escape","escape",["side"],"turtle","Slip under and out."],
   ["shoulderMat","Shoulder-to-mat escape","escape",["back"],"closed","Get your shoulders down, turn in."],
   ["granby","Granby roll","escape",["turtle"],"closed","Shoulder roll back to guard."],
-  ["sitOut","Sit-out","escape",["turtle"],null,"Wrestling reversal to get on top."]
+  ["sitOut","Sit-out","escape",["turtle"],null,"Wrestling reversal to get on top."],
+
+  // Newer positions and moves (added at the end so existing #numbers don't change)
+  ["shinSweep","Shin-to-shin sweep","sweep",["shin"],"standing","Off-balance them over your shin hook and come up on their leg."],
+  ["shinToSlx","Shin-to-shin to single leg X","move",["shin"],"slx","Slide under the hips from the shin hook into single leg X."],
+  ["lassoK","Lasso K-guard entry","move",["shin","lasso"],"kguard","Lasso the arm, then thread the K hook across their hips."],
+  ["kToDlr","K-guard to De La Riva","move",["kguard"],"dlr","Pull the K hook back outside the hip and recover De La Riva."],
+  ["kToSaddle","K-guard to saddle","move",["kguard"],"saddle","Spin under and triangle the legs for inside sankaku."],
+  ["bearTrap","Bear trap","sub",["dlr","butterfly","shin"],null,"Leg entanglement that stops their guard, finished as a calf-slicer–style compression or used to pass."],
+  ["tarikoplata","Tarikoplata","sub",["closed","side"],null,"Shoulder lock: trap their arm behind their back from a kimura or omoplata, then crank."],
+  ["baratoplata","Baratoplata","sub",["closed"],null,"Shoulder lock from an omoplata when they posture or hide the arm."],
+  ["japaneseNecktie","Japanese necktie","sub",["turtle","frontHeadlock"],null,"Front-headlock choke: sprawl your chest across their head and squeeze."],
+  ["vonFlue","Von Flue choke","sub",["side"],null,"When they keep a guillotine from bottom, drive your shoulder into their neck."],
+  ["buggy","Buggy choke","sub",["side"],null,"Choke from bottom side control: triangle your legs and lock hands around the head and arm."],
+  ["wristlock","Wristlock","sub",["closed","side","mount"],null,"Bend the wrist against the forearm. Fast, so tap early."],
+  ["bananaSplit","Banana split","sub",["truck"],null,"Split the legs from the truck. Hips and groin, not a joint."],
+  ["backTriangle","Back triangle","sub",["back"],null,"Triangle the legs around head and arm from the back."],
+  ["highElbowGuillotine","High-elbow guillotine","sub",["standing","frontHeadlock","closed","butterfly"],null,"Arm-in guillotine with your elbow high; rotate the wrist into the neck."],
+  ["crabBack","Crab ride back take","move",["crabRide"],"back","Hook the far leg from crab ride, then come up to the back."],
+  ["legDragBack","Leg drag back take","move",["legDragTop"],"back","When they turn away from the leg drag, take the back."],
+  ["longStep","Long step pass","pass",["hq","half","kneeShield"],"side","Step the far leg back over their legs and settle in side control."],
+  ["legWeave","Leg weave pass","pass",["hq","half"],"side","Weave your arm through to pin their legs, then pass."],
+  ["goBehind","Go-behind","move",["frontHeadlock"],"back","Circle off the front headlock to their back."],
+  ["waiterSlx","Waiter to single leg X","move",["waiterGuard"],"slx","Lift their leg from waiter and switch to single leg X."],
+  ["octopusBack","Octopus back take","move",["octopus"],"back","Reach across their back from half guard and climb to the back."],
+  ["octopusSweep","Octopus sweep","sweep",["octopus"],"side","Drive into them from the octopus grip and come up on top."],
+  ["wormSweep","Worm guard sweep","sweep",["worm"],"side","Lapel through the leg locks their foot; off-balance and come up.",true]
 ].map(([id,name,type,from,to,note,gi]) => ({ id, name, type, from, to, note, gi: !!gi, hub: false }));
 
 const hubById = new Map(HUBS.map(h => [h.id, h]));
@@ -554,7 +599,11 @@ const CHAINS = [
   ["omoplata","omoplataSweep"], ["oldSchool","kneeLever"], ["dogfight","wrestleUp"], ["butterflySweep","techStandup"],
   ["berimbolo","rnc"], ["toreando","kneeSlice"], ["kneeSlice","backstep"], ["legDrag","rnc"], ["americana","armbar","triangle"],
   ["giftWrap","rnc"], ["rnc","armbar"], ["rnc","bowArrow"], ["snapDown","darce","anaconda","guillotine"],
-  ["straightAnkle","kickOver"], ["upa","elbowKnee"], ["insideHeel","outsideHeel"], ["toeHold","kneebar"], ["seatbelt","rnc"]
+  ["straightAnkle","kickOver"], ["upa","elbowKnee"], ["insideHeel","outsideHeel"], ["toeHold","kneebar"], ["seatbelt","rnc"],
+  ["lassoK","kToDlr"], ["shinToSlx","straightAnkle"], ["shinSweep","shinToSlx"], ["bearTrap","calfSlicer"],
+  ["kToSaddle","insideHeel"], ["crabBack","rnc"], ["legDragBack","rnc"], ["goBehind","rnc"],
+  ["japaneseNecktie","darce"], ["kimura","tarikoplata"], ["omoplata","baratoplata"], ["legWeave","kneeSlice"],
+  ["waiterSlx","straightAnkle"], ["octopusBack","rnc"]
 ];
 const entryNo = new Map([
   ...TECHS.map((t, i) => [t.id, "#" + String(i + 1).padStart(3, "0")]),

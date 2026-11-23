@@ -8,7 +8,7 @@ Copy for App Store Connect and the Google Play Console. The character limits are
 | --- | --- |
 | App name (30) | Grappling Dex |
 | iOS subtitle (30) | BJJ training log & move dex |
-| Play short description (80) | Log your BJJ training and level up 85 moves from Seen to Mastered. |
+| Play short description (80) | Log your BJJ training and level up 100+ moves from Seen to Mastered. |
 | Bundle ID / package | `com.chnk137.grappledex` |
 | Category | Sports (Apple: Sports, with Health & Fitness second) |
 | Privacy policy URL | https://chnk137.github.io/grappling_dex/privacy.html (GitHub Pages, built from `docs/privacy.html`). Backup copy: https://gist.github.com/chnk137/374df88cb4aa57b0351366f54c96ed66 |
@@ -21,7 +21,7 @@ Grappling Dex turns your Brazilian jiu-jitsu training into a collection you fill
 
 After class, log what you worked on in a few taps: what you were taught, what you drilled and what you landed in live rolling. Every move climbs through four stages, from Seen to Drilled, then Hit and finally Mastered, so you can see at a glance which techniques actually work for you under resistance.
 
-• 85 techniques across 31 positions: submissions, sweeps, passes, escapes and transitions, with leg locks broken out by entry
+• 109 techniques across 40 positions, including newer guards like shin-to-shin, K-guard and waiter, with leg locks broken out by entry
 • Every move links to the positions it works from, the moves it chains into, and related techniques
 • Log where each move came from, so a triangle from closed guard counts for closed guard, not every position it can start from
 • A scorecard for each position: what you can attack, pass, escape and sweep from there

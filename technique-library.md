@@ -662,3 +662,46 @@ Every technique that appears in more than one position, with all the places it w
 | Wrestle-up / single leg | Sweep | Half guard (dogfight), Seated guard, Knee shield (underhook) |
 | Bridge and roll (upa) | Sweep | Bottom mount, Bottom side control, Bottom kesa gatame |
 | Into leg entanglements | Transition | Single leg X, X-guard, Butterfly, De La Riva, Reverse DLR, K-guard, Shin-to-shin, Deep half, Standing (Imanari roll), Passing (backstep) |
+
+## Newer positions and moves
+
+Added Nov 22, 2026, starting from a shin-to-shin → lasso K-guard → De La Riva class and the bear trap.
+
+| Position | Type | Connects to |
+| --- | --- | --- |
+| Shin-to-shin | Guard (bottom) | Standing, De La Riva, Single leg X / straight ashi, Butterfly, Lasso guard, K-guard |
+| Waiter guard | Guard (bottom) | Deep half, Single leg X / straight ashi, Saddle (inside sankaku) |
+| Octopus guard | Guard (bottom) | Half guard, Back |
+| Worm guard | Guard (bottom) | De La Riva, Reverse DLR |
+| Headquarters (HQ) | Passing (top) | Half guard, Knee shield, De La Riva, Top half guard, Side control |
+| Body lock (passing) | Passing (top) | Butterfly, Half guard, Top half guard, Mount |
+| Leg drag (top) | Passing (top) | De La Riva, Reverse DLR, Side control, Back |
+| Crab ride | Dominant (top) | De La Riva, Back, Turtle |
+| Front headlock | Pin (top) | Standing, Turtle, Back |
+
+| Technique | Tag | Works from | Notes |
+| --- | --- | --- | --- |
+| Shin-to-shin sweep | Sweep | Shin-to-shin → Standing | Off-balance them over your shin hook and come up on their leg. |
+| Shin-to-shin to single leg X | Transition | Shin-to-shin → Single leg X / straight ashi | Slide under the hips from the shin hook into single leg X. |
+| Lasso K-guard entry | Transition | Shin-to-shin, Lasso guard → K-guard | Lasso the arm, then thread the K hook across their hips. |
+| K-guard to De La Riva | Transition | K-guard → De La Riva | Pull the K hook back outside the hip and recover De La Riva. |
+| K-guard to saddle | Transition | K-guard → Saddle (inside sankaku) | Spin under and triangle the legs for inside sankaku. |
+| Bear trap | Sub | De La Riva, Butterfly, Shin-to-shin | Leg entanglement that stops their guard, finished as a calf-slicer–style compression or used to pass. |
+| Tarikoplata | Sub | Closed guard, Side control | Shoulder lock: trap their arm behind their back from a kimura or omoplata, then crank. |
+| Baratoplata | Sub | Closed guard | Shoulder lock from an omoplata when they posture or hide the arm. |
+| Japanese necktie | Sub | Turtle, Front headlock | Front-headlock choke: sprawl your chest across their head and squeeze. |
+| Von Flue choke | Sub | Side control | When they keep a guillotine from bottom, drive your shoulder into their neck. |
+| Buggy choke | Sub | Side control | Choke from bottom side control: triangle your legs and lock hands around the head and arm. |
+| Wristlock | Sub | Closed guard, Side control, Mount | Bend the wrist against the forearm. Fast, so tap early. |
+| Banana split | Sub | Truck | Split the legs from the truck. Hips and groin, not a joint. |
+| Back triangle | Sub | Back | Triangle the legs around head and arm from the back. |
+| High-elbow guillotine | Sub | Standing, Front headlock, Closed guard, Butterfly | Arm-in guillotine with your elbow high; rotate the wrist into the neck. |
+| Crab ride back take | Transition | Crab ride → Back | Hook the far leg from crab ride, then come up to the back. |
+| Leg drag back take | Transition | Leg drag (top) → Back | When they turn away from the leg drag, take the back. |
+| Long step pass | Pass | Headquarters (HQ), Half guard, Knee shield → Side control | Step the far leg back over their legs and settle in side control. |
+| Leg weave pass | Pass | Headquarters (HQ), Half guard → Side control | Weave your arm through to pin their legs, then pass. |
+| Go-behind | Transition | Front headlock → Back | Circle off the front headlock to their back. |
+| Waiter to single leg X | Transition | Waiter guard → Single leg X / straight ashi | Lift their leg from waiter and switch to single leg X. |
+| Octopus back take | Transition | Octopus guard → Back | Reach across their back from half guard and climb to the back. |
+| Octopus sweep | Sweep | Octopus guard → Side control | Drive into them from the octopus grip and come up on top. |
+| Worm guard sweep (gi) | Sweep | Worm guard → Side control | Lapel through the leg locks their foot; off-balance and come up. |

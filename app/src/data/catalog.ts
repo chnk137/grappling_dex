@@ -2,7 +2,7 @@ import raw from './catalog.json';
 import { posStage, stageOf, type Progress } from '../lib/progress';
 
 export type MoveType = 'sub' | 'sweep' | 'pass' | 'move' | 'escape';
-export type Tier = 'stand' | 'guard' | 'leg' | 'pin' | 'dom';
+export type Tier = 'stand' | 'guard' | 'leg' | 'pass' | 'pin' | 'dom';
 
 export interface Position { id: string; name: string; tier: Tier; x: number; y: number }
 export interface Technique { id: string; name: string; type: MoveType; from: string[]; to: string | null; note: string; gi: boolean }
@@ -15,7 +15,7 @@ export const TYPES: Record<MoveType, { label: string; plural: string }> = {
   escape: { label: 'Escape', plural: 'Escapes' },
 };
 export const TIERS: Record<Tier, string> = {
-  stand: 'Standing', guard: 'Guard · bottom', leg: 'Leg entanglement', pin: 'Pin · top', dom: 'Dominant · top',
+  stand: 'Standing', guard: 'Guard · bottom', leg: 'Leg entanglement', pass: 'Passing · top', pin: 'Pin · top', dom: 'Dominant · top',
 };
 
 export const positions = raw.positions as Position[];

@@ -36,7 +36,8 @@
     "test": "node --test src/lib/progress.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "privacy-page": "node --no-warnings scripts/privacy-page.mts"
+    "privacy-page": "node --no-warnings scripts/privacy-page.mts",
+    "catalog": "node --no-warnings scripts/catalog-from-dex.mts"
   },
   "private": true
 }
