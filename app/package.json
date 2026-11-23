@@ -37,7 +37,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "privacy-page": "node --no-warnings scripts/privacy-page.mts",
-    "catalog": "node --no-warnings scripts/catalog-from-dex.mts"
+    "catalog": "node --no-warnings scripts/catalog-from-dex.mts",
+    "sprites": "node --no-warnings scripts/sprites.mts"
   },
   "private": true
 }

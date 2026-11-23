@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite samples</title>
+<style>
+  :root { color-scheme: dark; --bg: #0e1320; --panel: #141b2c; --line: #2a3552; --ink: #e7eaf3; --muted: #8d97b0; --brass: #d9b46c; --ok: #4fcbb2; --bad: #f2766d; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 4px; color: var(--brass); letter-spacing: .04em; text-transform: uppercase; }
+  p.sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .frame { background: #0c1a21; border: 1px solid #1c3039; border-radius: 10px; display: grid; place-items: center; padding: 10px; }
+  img { width: 100%; max-width: 320px; image-rendering: pixelated; }
+  figcaption { margin-top: 10px; }
+  b { display: block; }
+  .verdict { font-size: 13px; font-weight: 700; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .meh { color: var(--brass); }
+  .why { color: var(--muted); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sprite samples</h1>
+  <p class="sub">Three test position sprites from PixelLab's quick generator, shown at 2× in the dex's portrait frame.</p>
+  <div class="grid">
+    <figure>
+      <div class="frame"><img src="closed-guard.png" alt="Sample sprite: closed guard"></div>
+      <figcaption><b>Closed guard</b><span class="verdict meh">Close, not right</span>
+        <div class="why">Reads as guard, but the legs aren't clearly locked around the waist and the top player is leaning in, not posted up.</div></figcaption>
+    </figure>
+    <figure>
+      <div class="frame"><img src="shin-to-shin.png" alt="Sample sprite: shin-to-shin attempt"></div>
+      <figcaption><b>Shin-to-shin</b><span class="verdict bad">Wrong position</span>
+        <div class="why">Bottom player is kneeling in front of a standing partner. No shin across the shin at all.</div></figcaption>
+    </figure>
+    <figure>
+      <div class="frame"><img src="saddle.png" alt="Sample sprite: saddle attempt"></div>
+      <figcaption><b>Saddle (inside sankaku)</b><span class="verdict bad">Wrong position</span>
+        <div class="why">Two people sitting facing each other. The legs aren't entangled, so it could be any seated position.</div></figcaption>
+    </figure>
+  </div>
+</main>
+</body>
+</html>

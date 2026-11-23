@@ -22,6 +22,8 @@ The iOS and Android version of the Grappling Dex, built with Expo (SDK 58), Expo
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | Expo's ESLint config |
 | `npx expo start --web` | Browser preview (progress saved in browser storage) |
+| `npm run sprites` | Imports position images from `../sprites/originals/` (made with `../sprites/PROMPTS.md`) into the app and web dex |
+| `npm run catalog` | Regenerates `src/data/catalog.json` from the web dex |
 | `npm run privacy-page` | Rebuilds `../docs/privacy.html` from `src/data/privacy.ts` |
 | `npx eas-cli@latest build --profile production` | Store builds (profiles in `eas.json`) |
 
