@@ -28,7 +28,7 @@ export default function LogScreen() {
     [progress],
   ).filter(id => !pickedIds.has(id));
 
-  const add = (moveId: string) => { setPicked(p => [...p, { moveId, kind: 'drilled', hits: 1 }]); setQuery(''); Haptics.selectionAsync(); };
+  const add = (moveId: string) => { setPicked(p => [...p, { moveId, kind: 'drilled' }]); setQuery(''); Haptics.selectionAsync(); };
   const update = (moveId: string, patch: Partial<LogEntry>) => setPicked(p => p.map(e => (e.moveId === moveId ? { ...e, ...patch } : e)));
   const remove = (moveId: string) => setPicked(p => p.filter(e => e.moveId !== moveId));
   const dateOk = ISO.test(date) && !Number.isNaN(Date.parse(date)) && date <= localDate();
@@ -105,14 +105,6 @@ export default function LogScreen() {
                   </Pressable>
                 ))}
               </View>
-              {e.kind === 'hit' && (
-                <View style={styles.stepper}>
-                  <Pressable onPress={() => update(e.moveId, { hits: Math.max(1, e.hits - 1) })} style={styles.stepBtn} accessibilityLabel="Fewer hits"><Text style={styles.stepText}>−</Text></Pressable>
-                  <Text style={styles.hits}>{e.hits}</Text>
-                  <Pressable onPress={() => update(e.moveId, { hits: e.hits + 1 })} style={styles.stepBtn} accessibilityLabel="More hits"><Text style={styles.stepText}>+</Text></Pressable>
-                  <Text style={styles.small}>hits</Text>
-                </View>
-              )}
             </View>
           </View>
         ))}
@@ -142,10 +134,6 @@ const styles = StyleSheet.create({
   segBtn: { minHeight: 40, paddingHorizontal: 12, justifyContent: 'center' },
   segOn: { backgroundColor: colors.brass },
   segText: { color: colors.muted, fontSize: 13.5, fontWeight: '700' },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn: { width: 40, height: 40, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  stepText: { color: colors.ink, fontSize: 20 },
-  hits: { color: colors.ink, fontSize: 16, fontWeight: '700', minWidth: 18, textAlign: 'center' },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.panel },
   small: { color: colors.muted, fontSize: 12, letterSpacing: 0.5 },
   muted: { color: colors.muted, fontSize: 15 },

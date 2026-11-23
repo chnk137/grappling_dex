@@ -5,7 +5,7 @@ import { colors } from '../theme';
 import * as db from './db';
 import { addItem, localDate, stageOf, type Kind, type Progress, type Session, type Stage } from './progress';
 
-export interface LogEntry { moveId: string; kind: Kind; hits: number }
+export interface LogEntry { moveId: string; kind: Kind }
 
 interface Store {
   progress: Progress;
@@ -44,7 +44,7 @@ function LoadedProvider({ initial, children }: { initial: Progress; children: Re
   const logMoves = useCallback((date: string, entries: LogEntry[]) => {
     const before = new Map(entries.map(e => [e.moveId, stageOf(progress, e.moveId)]));
     let s = progress.sessions.find(x => x.date === date) ?? newSession(date);
-    for (const e of entries) s = addItem(s, e.moveId, e.kind, e.hits);
+    for (const e of entries) s = addItem(s, e.moveId, e.kind);
     db.saveSession(s);
     const next = db.loadProgress();
     setProgress(next);

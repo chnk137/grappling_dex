@@ -14,26 +14,26 @@ test('one log of any kind makes a move Seen', () => {
   assert.equal(stageOf(prog([session('2026-11-01', { armbar: { kind: 'seen', hits: 0 } })]), 'armbar'), 1);
 });
 
-test('Drilled needs drilling in two separate sessions', () => {
-  const one = prog([session('2026-11-01', { armbar: { kind: 'drilled', hits: 0 } })]);
-  assert.equal(stageOf(one, 'armbar'), 1);
-  const two = prog([...one.sessions, session('2026-11-03', { armbar: { kind: 'drilled', hits: 0 } })]);
-  assert.equal(stageOf(two, 'armbar'), 2);
+test('Seen more than once is still Seen', () => {
+  const p = prog([session('2026-11-01', { armbar: { kind: 'seen', hits: 0 } }), session('2026-11-02', { armbar: { kind: 'seen', hits: 0 } })]);
+  assert.equal(stageOf(p, 'armbar'), 1);
+});
+
+test('drilling once reaches Drilled', () => {
+  assert.equal(stageOf(prog([session('2026-11-01', { armbar: { kind: 'drilled', hits: 0 } })]), 'armbar'), 2);
 });
 
 test('a single live hit reaches Hit, even without drilling first', () => {
   assert.equal(stageOf(prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 1 } })]), 'armbar'), 3);
 });
 
-test('Mastered needs 5 hits across at least 3 sessions', () => {
-  const crammed = prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 6 } })]);
-  assert.equal(stageOf(crammed, 'armbar'), 3, 'six hits in one session is not mastery');
-  const spread = prog([
-    session('2026-11-01', { armbar: { kind: 'hit', hits: 2 } }),
-    session('2026-11-03', { armbar: { kind: 'hit', hits: 2 } }),
-    session('2026-11-05', { armbar: { kind: 'hit', hits: 1 } }),
-  ]);
-  assert.equal(stageOf(spread, 'armbar'), 4);
+test('Mastered needs live hits on 5 different days; hit counts within a day do not matter', () => {
+  const day = (d: string, hits = 1) => session(d, { armbar: { kind: 'hit', hits } });
+  const crammed = prog([day('2026-11-01', 9), day('2026-11-02', 9)]);
+  assert.equal(stageOf(crammed, 'armbar'), 3, 'many hits on two days is not mastery');
+  const four = ['01', '03', '05', '07'].map(d => day(`2026-11-${d}`));
+  assert.equal(stageOf(prog(four), 'armbar'), 3);
+  assert.equal(stageOf(prog([...four, day('2026-11-09')]), 'armbar'), 4);
 });
 
 test('a starting stage is a floor, and logs can raise it', () => {
@@ -41,23 +41,22 @@ test('a starting stage is a floor, and logs can raise it', () => {
   assert.equal(stageOf(prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 1 } })], { armbar: 2 }), 'armbar'), 3);
 });
 
-test('logging never downgrades a move within a session, and hits add up', () => {
+test('logging never downgrades a move within a session', () => {
   let s = session('2026-11-01');
   s = addItem(s, 'armbar', 'hit');
   s = addItem(s, 'armbar', 'drilled');
+  s = addItem(s, 'armbar', 'hit');
   assert.deepEqual(s.items.armbar, { kind: 'hit', hits: 1 });
-  s = addItem(s, 'armbar', 'hit', 2);
-  assert.deepEqual(s.items.armbar, { kind: 'hit', hits: 3 });
   s = addItem(s, 'triangle', 'seen');
   s = addItem(s, 'triangle', 'drilled');
   assert.deepEqual(s.items.triangle, { kind: 'drilled', hits: 0 });
 });
 
-test('next step text counts what is left', () => {
-  const p = prog([session('2026-11-01', { armbar: { kind: 'drilled', hits: 0 } })]);
-  assert.equal(nextStep(p, 'armbar'), 'Drill it in 1 more session to reach Drilled.');
-  const hit = prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 2 } })]);
-  assert.equal(nextStep(hit, 'armbar'), 'For Mastered: 3 more live hits and hits in 2 more sessions.');
+test('next step text says what is left', () => {
+  const seen = prog([session('2026-11-01', { armbar: { kind: 'seen', hits: 0 } })]);
+  assert.equal(nextStep(seen, 'armbar'), 'Drill it once to reach Drilled.');
+  const hit = prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 2 } }), session('2026-11-02', { armbar: { kind: 'hit', hits: 1 } })]);
+  assert.equal(nextStep(hit, 'armbar'), 'Hit it live on 3 more days to reach Mastered.');
 });
 
 test('a backup round-trips', () => {

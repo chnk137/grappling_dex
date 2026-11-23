@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Grappling Dex</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -81,6 +83,10 @@ main { flex: 1; display: flex; min-height: 0; }
 .card.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
 .status { font: 600 10.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .status.on { color: var(--brass); }
+.days { display: flex; align-items: center; gap: 8px; }
+.dots { display: inline-flex; gap: 4px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--brass, #d9b46c); opacity: .5; }
+.dots i.f { background: var(--brass, #d9b46c); opacity: 1; }
 .pips { display: inline-flex; gap: 3px; }
 .pips i { width: 10px; height: 4px; border-radius: 2px; background: var(--line); }
 .pips i.f { background: var(--brass); }
@@ -239,9 +245,6 @@ aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1e
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg button { border: 0; background: transparent; color: var(--muted); padding: 5px 10px; font: 600 12px var(--font-body); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--brass); color: var(--bg); }
-.stepper { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
-.stepper button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
-.stepper b { color: var(--ink); min-width: 14px; text-align: center; font-variant-numeric: tabular-nums; }
 .x { all: unset; cursor: pointer; color: var(--muted); padding: 2px 6px; }
 .x:focus-visible { outline: 2px solid var(--brass); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-weight: 600; z-index: 30; }
@@ -315,8 +318,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .tabbar .plus svg { width: 24px; height: 24px; }
   .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   .seg button { padding: 10px 14px; font-size: 13.5px; }
-  .stepper button { width: 38px; height: 38px; font-size: 18px; }
-  .x { padding: 8px 10px; font-size: 16px; }
+    .x { padding: 8px 10px; font-size: 16px; }
   .results button { padding: 10px 8px; font-size: 15px; }
 }
 </style>
@@ -554,9 +556,10 @@ function combos(t) {
 const STAGES = ["Unseen", "Seen", "Drilled", "Hit", "Mastered"];
 const MAXFROM = Math.max(...TECHS.map(t => t.from.length));
 const MAXCMB = Math.max(...TECHS.map(t => combos(t).length));
-const KINDS = { seen: "Taught", drilled: "Drilled", hit: "Hit live" };
+const KINDS = { seen: "Seen", drilled: "Drilled", hit: "Hit live" };
 const KRANK = { seen: 1, drilled: 2, hit: 3 };
-const RULES = { drillSessions: 2, masterHits: 5, masterSessions: 3 };
+// Each stage asks for one thing. Mastered = hit live on this many different days.
+const RULES = { masterDays: 5 };
 let data = { v: 2, sessions: [], base: {} };
 const KEY = "grappling-dex-v2", OLD_KEY = "grappling-dex-learned-v1";
 try {
@@ -568,20 +571,21 @@ try {
   }
 } catch (e) {}
 
+// Counts training days (sessions) by the best thing logged for the move that day.
 function stats(id) {
-  let seenS = 0, drillS = 0, hits = 0, hitS = 0, last = null;
+  let seenS = 0, drillS = 0, hitS = 0, last = null;
   for (const s of data.sessions) {
     const it = s.items[id]; if (!it) continue;
     seenS++; if (it.k !== "seen") drillS++;
-    if (it.k === "hit") { hits += it.n || 1; hitS++; }
+    if (it.k === "hit") hitS++;
     if (!last || s.d > last) last = s.d;
   }
-  return { seenS, drillS, hits, hitS, last };
+  return { seenS, drillS, hitS, last };
 }
 function derived(st) {
-  if (st.hits >= RULES.masterHits && st.hitS >= RULES.masterSessions) return 4;
-  if (st.hits >= 1) return 3;
-  if (st.drillS >= RULES.drillSessions) return 2;
+  if (st.hitS >= RULES.masterDays) return 4;
+  if (st.hitS >= 1) return 3;
+  if (st.drillS >= 1) return 2;
   if (st.seenS >= 1) return 1;
   return 0;
 }
@@ -590,14 +594,10 @@ function recompute() { stageCache = new Map(TECHS.map(t => [t.id, Math.max(data.
 const stage = id => stageCache.get(id) || 0;
 function nextStep(id) {
   const s = stage(id), st = stats(id);
-  if (s === 0) return "Log it once (taught, drilled or hit) to mark it Seen.";
-  if (s === 1) { const left = Math.max(1, RULES.drillSessions - st.drillS); return `Drill it in ${left} more session${left > 1 ? "s" : ""} to reach Drilled.`; }
+  if (s === 0) return "Log it once to mark it Seen.";
+  if (s === 1) return "Drill it once to reach Drilled.";
   if (s === 2) return "Land it once in live rolling to reach Hit.";
-  if (s === 3) {
-    const h = Math.max(0, RULES.masterHits - st.hits), ss = Math.max(0, RULES.masterSessions - st.hitS);
-    const parts = [h ? `${h} more live hit${h > 1 ? "s" : ""}` : "", ss ? `hits in ${ss} more session${ss > 1 ? "s" : ""}` : ""].filter(Boolean);
-    return `For Mastered: ${parts.join(" and ")}.`;
-  }
+  if (s === 3) { const left = Math.max(1, RULES.masterDays - st.hitS); return `Hit it live on ${left} more day${left > 1 ? "s" : ""} to reach Mastered.`; }
   return "Mastered. It works on resisting partners.";
 }
 const pips = s => `<span class="pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= s ? "f" : ""}"></i>`).join("")}</span>`;
@@ -639,14 +639,14 @@ function sessionFor(d, create) {
   if (!s && create) { s = { id: d + "-" + Math.random().toString(36).slice(2, 7), d, items: {} }; data.sessions.push(s); data.sessions.sort((a, b) => a.d < b.d ? -1 : 1); }
   return s;
 }
-function addItem(s, id, k, n) {
+// One entry per move per day; logging never downgrades it (Seen < Drilled < Hit live).
+function addItem(s, id, k) {
   const cur = s.items[id];
-  if (k === "hit") s.items[id] = { k: "hit", n: (cur && cur.k === "hit" ? cur.n || 1 : 0) + (n || 1) };
-  else if (!cur || KRANK[cur.k] < KRANK[k]) s.items[id] = { k };
+  if (!cur || KRANK[cur.k] < KRANK[k]) s.items[id] = k === "hit" ? { k, n: 1 } : { k };
 }
 function quickLog(id, k) {
   const before = stage(id);
-  addItem(sessionFor(todayISO(), true), id, k, 1);
+  addItem(sessionFor(todayISO(), true), id, k);
   commit();
   const after = stage(id);
   toast(after > before ? `${nodeById.get(id).name} reached ${STAGES[after]}` : `Logged ${KINDS[k].toLowerCase()} for today`);
@@ -881,7 +881,7 @@ function renderPanel() {
   if (!n) {
     const recent = data.sessions.slice(-6).reverse();
     panel.innerHTML = `<div class="kind">Grappling Dex</div><h2>Log what you train, watch the dex fill in</h2>
-      <p class="empty">Each move climbs four stages: <b>Seen</b> once it's logged, <b>Drilled</b> after ${RULES.drillSessions} drilling sessions, <b>Hit</b> when you land it live, and <b>Mastered</b> after ${RULES.masterHits} live hits across ${RULES.masterSessions} sessions.</p>
+      <p class="empty">Each move climbs four stages: <b>Seen</b> when you watch it, <b>Drilled</b> when you drill it, <b>Hit</b> when you land it live, and <b>Mastered</b> when you've hit it live on ${RULES.masterDays} different days.</p>
       <p class="empty">Already know a move? Open its entry and set a starting stage. Positions score how many of their moves you can hit, and flag gaps like a missing escape.</p>
       <div class="summary">${[1, 2, 3, 4].map(k => `<div class="tile"><b>${TECHS.filter(t => stage(t.id) >= k).length}</b><span>${pips(k)} ${STAGES[k]}${k < 4 ? "+" : ""}</span></div>`).join("")}</div>
       <button class="primary" id="panelLog">Log a session</button>
@@ -921,17 +921,17 @@ function renderPanel() {
       <div class="stagebox">
         <div class="stagehead"><b>${STAGES[s]}</b>${pips(s)}</div>
         <p class="next">${nextStep(n.id)}</p>
-        <div class="qlog"><button data-k="seen">+ Taught</button><button data-k="drilled">+ Drilled</button><button data-k="hit">+ Hit live</button></div>
-        ${ti ? `<div class="today"><span>Today: ${KINDS[ti.k]}${ti.k === "hit" ? ` ×${ti.n || 1}` : ""}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
-        <p class="next">${st.seenS ? `Logged in ${st.seenS} session${st.seenS > 1 ? "s" : ""} · ${st.hits} live hit${st.hits === 1 ? "" : "s"} · last ${fmtDate(st.last)}` : "Not logged yet."}</p>
+        <div class="qlog"><button data-k="seen">+ Seen</button><button data-k="drilled">+ Drilled</button><button data-k="hit">+ Hit live</button></div>
+        ${ti ? `<div class="today"><span>Today: ${KINDS[ti.k]}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
+        <p class="next days" aria-label="Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days"><span class="dots" aria-hidden="true">${Array.from({ length: RULES.masterDays }, (_, i) => `<i class="${i < st.hitS ? "f" : ""}"></i>`).join("")}</span> Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days</p>
+        <p class="next">${st.seenS ? `Logged in ${st.seenS} session${st.seenS > 1 ? "s" : ""} · last ${fmtDate(st.last)}` : "Not logged yet."}</p>
         <label class="basesel" for="base">Already know it?<select id="base">${STAGES.map((l, i) => `<option value="${i}"${(data.base[n.id] || 0) === i ? " selected" : ""}>${i ? "Start at " + l : "No starting stage"}</option>`).join("")}</select></label>
       </div>
       <h3>Stats</h3>
       <div class="score">${[
         ["Positions", n.from.length, MAXFROM],
         ["Combos", cmb.length, MAXCMB],
-        ["Live hits", st.hits, RULES.masterHits],
-        ["Sessions", st.seenS, RULES.masterSessions + RULES.drillSessions]
+        ["Days hit live", st.hitS, RULES.masterDays]
       ].map(([l, v, m]) => `<div class="srow"><span>${l}</span><span class="sbar"><i style="width:${Math.min(100, 100 * v / m)}%"></i></span><span>${v}</span></div>`).join("")}</div>
       <h3>Related positions · works from (${n.from.length})</h3><div class="links">${n.from.map(chip).join("")}</div>
       ${n.to ? `<h3>Leads to</h3><div class="links">${chip(n.to)}</div>` : ""}
@@ -989,7 +989,7 @@ let draft = new Map(), lastFocus = null;
 function openLog() {
   lastFocus = document.activeElement;
   draft = new Map();
-  if (selected && !nodeById.get(selected).hub) draft.set(selected, { k: "drilled", n: 1 });
+  if (selected && !nodeById.get(selected).hub) draft.set(selected, { k: "drilled" });
   document.getElementById("logDate").value = todayISO();
   document.getElementById("logSearch").value = "";
   sheet.hidden = false; renderSheet();
@@ -1005,15 +1005,12 @@ function renderSheet() {
     ? `<div class="field">Recent<div class="links">${recentIds.map(id => `<button data-add="${id}">${icon(nodeById.get(id), 12)}${esc(nodeById.get(id).name)}</button>`).join("")}</div></div>` : "";
   document.getElementById("logPicked").innerHTML = [...draft].map(([id, v]) => `<div class="prow">
       <span class="nm">${icon(nodeById.get(id))}${esc(nodeById.get(id).name)}</span><button class="x" data-rm="${id}" aria-label="Remove ${esc(nodeById.get(id).name)}">✕</button>
-      <div class="ctrl"><span class="seg" role="group" aria-label="What you did">${Object.entries(KINDS).map(([k, l]) => `<button data-set="${id}" data-k="${k}" aria-pressed="${v.k === k}">${l}</button>`).join("")}</span>
-      ${v.k === "hit" ? `<span class="stepper"><button data-dec="${id}" aria-label="Fewer hits">−</button><b>${v.n}</b><button data-inc="${id}" aria-label="More hits">+</button> hits</span>` : ""}</div></div>`).join("");
+      <div class="ctrl"><span class="seg" role="group" aria-label="What you did">${Object.entries(KINDS).map(([k, l]) => `<button data-set="${id}" data-k="${k}" aria-pressed="${v.k === k}">${l}</button>`).join("")}</span></div></div>`).join("");
   document.getElementById("logCount").textContent = draft.size ? `${draft.size} move${draft.size > 1 ? "s" : ""} in this session` : "Nothing added yet";
   document.getElementById("saveLog").disabled = !draft.size;
-  sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.set(b.dataset.add, { k: "drilled", n: 1 }); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
+  sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.set(b.dataset.add, { k: "drilled" }); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
   sheet.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { draft.delete(b.dataset.rm); renderSheet(); });
   sheet.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { draft.get(b.dataset.set).k = b.dataset.k; renderSheet(); });
-  sheet.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => { draft.get(b.dataset.inc).n++; renderSheet(); });
-  sheet.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => { const v = draft.get(b.dataset.dec); v.n = Math.max(1, v.n - 1); renderSheet(); });
 }
 document.getElementById("logSearch").addEventListener("input", renderSheet);
 document.getElementById("logSearch").addEventListener("keydown", e => { if (e.key === "Enter") { const b = sheet.querySelector("#logResults [data-add]"); if (b) { e.preventDefault(); b.click(); } } });
@@ -1026,7 +1023,7 @@ document.getElementById("saveLog").onclick = () => {
   const d = document.getElementById("logDate").value || todayISO();
   const before = new Map(TECHS.map(t => [t.id, stage(t.id)]));
   const s = sessionFor(d, true);
-  draft.forEach((v, id) => addItem(s, id, v.k, v.n));
+  draft.forEach((v, id) => addItem(s, id, v.k));
   commit(); closeLog();
   const ups = [...draft.keys()].filter(id => stage(id) > before.get(id));
   toast(ups.length ? `Saved · ${ups.length} move${ups.length > 1 ? "s" : ""} levelled up` : `Saved · ${draft.size} move${draft.size > 1 ? "s" : ""} logged`);

@@ -32,7 +32,7 @@ function MoveEntry({ t }: { t: Technique }) {
   const cmb = combos(t);
 
   const quick = (kind: Kind) => {
-    const ups = logMoves(localDate(), [{ moveId: t.id, kind, hits: 1 }]);
+    const ups = logMoves(localDate(), [{ moveId: t.id, kind }]);
     if (ups.length) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -63,13 +63,17 @@ function MoveEntry({ t }: { t: Technique }) {
         </View>
         {today && (
           <View style={styles.todayRow}>
-            <Text style={styles.ink}>Today: {KIND_LABEL[today.kind]}{today.kind === 'hit' ? ` ×${today.hits}` : ''}</Text>
+            <Text style={styles.ink}>Today: {KIND_LABEL[today.kind]}</Text>
             <Pressable onPress={() => clearToday(t.id)} hitSlop={10}><Text style={styles.link}>Undo today</Text></Pressable>
           </View>
         )}
-        <Text style={styles.muted}>
-          {st.seenSessions ? `Logged in ${st.seenSessions} session${st.seenSessions > 1 ? 's' : ''} · ${st.hits} live hit${st.hits === 1 ? '' : 's'}` : 'Not logged yet.'}
-        </Text>
+        <View style={styles.daysRow} accessible accessibilityLabel={`Hit live on ${Math.min(st.hitDays, RULES.masterDays)} of ${RULES.masterDays} days`}>
+          <View style={styles.dots}>
+            {Array.from({ length: RULES.masterDays }, (_, i) => <View key={i} style={[styles.dot, i < st.hitDays && styles.dotOn]} />)}
+          </View>
+          <Text style={styles.muted}>Hit live on {Math.min(st.hitDays, RULES.masterDays)} of {RULES.masterDays} days</Text>
+        </View>
+        <Text style={styles.small}>{st.sessions ? `Logged in ${st.sessions} session${st.sessions > 1 ? 's' : ''}` : 'Not logged yet.'}</Text>
         <SectionLabel>Already know it? Starting stage</SectionLabel>
         <View style={styles.baseRow}>
           {([0, 1, 2, 3, 4] as Stage[]).map(i => {
@@ -87,8 +91,7 @@ function MoveEntry({ t }: { t: Technique }) {
       <View style={styles.bars}>
         <Bar label="Positions" value={t.from.length} max={MAX_FROM} />
         <Bar label="Combos" value={cmb.length} max={MAX_COMBOS} />
-        <Bar label="Live hits" value={st.hits} max={RULES.masterHits} />
-        <Bar label="Sessions" value={st.seenSessions} max={RULES.masterSessions + RULES.drillSessions} />
+        <Bar label="Days hit live" value={st.hitDays} max={RULES.masterDays} right={`${Math.min(st.hitDays, RULES.masterDays)}/${RULES.masterDays}`} />
       </View>
 
       <SectionLabel>{`Related positions · works from (${t.from.length})`}</SectionLabel>
@@ -133,6 +136,10 @@ function PositionEntry({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   body: { padding: space.lg, gap: space.md, paddingBottom: 48 },
+  daysRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dots: { flexDirection: 'row', gap: 5 },
+  dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 1.5, borderColor: colors.brass, opacity: 0.5 },
+  dotOn: { backgroundColor: colors.brass, opacity: 1 },
   kindRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   entryNo: { color: colors.brass, fontWeight: '700', fontVariant: ['tabular-nums'] },
   tag: { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', borderWidth: 1, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },

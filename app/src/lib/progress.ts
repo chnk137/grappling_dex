@@ -4,35 +4,43 @@
 export type Kind = 'seen' | 'drilled' | 'hit';
 export type Stage = 0 | 1 | 2 | 3 | 4;
 
+/** `hits` is kept for older saved data and backups; stages no longer use it. */
 export interface SessionItem { kind: Kind; hits: number }
 export interface Session { id: string; date: string; items: Record<string, SessionItem> }
 export interface Progress { sessions: Session[]; base: Record<string, Stage> }
 
 export const STAGES = ['Unseen', 'Seen', 'Drilled', 'Hit', 'Mastered'] as const;
-export const KIND_LABEL: Record<Kind, string> = { seen: 'Taught', drilled: 'Drilled', hit: 'Hit live' };
-export const RULES = { drillSessions: 2, masterHits: 5, masterSessions: 3 } as const;
+export const KIND_LABEL: Record<Kind, string> = { seen: 'Seen', drilled: 'Drilled', hit: 'Hit live' };
+/** Mastered = hit live on this many different days (sessions). */
+export const RULES = { masterDays: 5 } as const;
 const KIND_RANK: Record<Kind, number> = { seen: 1, drilled: 2, hit: 3 };
 
-export interface MoveStats { seenSessions: number; drillSessions: number; hits: number; hitSessions: number; last: string | null }
+/** How many sessions (training days) a move was logged in, by its best kind that day. */
+export interface MoveStats { sessions: number; drillDays: number; hitDays: number; last: string | null }
 
 export function stats(p: Progress, moveId: string): MoveStats {
-  const s: MoveStats = { seenSessions: 0, drillSessions: 0, hits: 0, hitSessions: 0, last: null };
+  const s: MoveStats = { sessions: 0, drillDays: 0, hitDays: 0, last: null };
   for (const session of p.sessions) {
     const it = session.items[moveId];
     if (!it) continue;
-    s.seenSessions++;
-    if (it.kind !== 'seen') s.drillSessions++;
-    if (it.kind === 'hit') { s.hits += Math.max(1, it.hits); s.hitSessions++; }
+    s.sessions++;
+    if (it.kind !== 'seen') s.drillDays++;
+    if (it.kind === 'hit') s.hitDays++;
     if (!s.last || session.date > s.last) s.last = session.date;
   }
   return s;
 }
 
+/**
+ * Each stage asks for one thing: Seen = logged once, Drilled = drilled once,
+ * Hit = hit live once, Mastered = hit live on 5 different days.
+ * A live hit also counts as drilling, so a move can jump straight to Hit.
+ */
 export function derivedStage(s: MoveStats): Stage {
-  if (s.hits >= RULES.masterHits && s.hitSessions >= RULES.masterSessions) return 4;
-  if (s.hits >= 1) return 3;
-  if (s.drillSessions >= RULES.drillSessions) return 2;
-  if (s.seenSessions >= 1) return 1;
+  if (s.hitDays >= RULES.masterDays) return 4;
+  if (s.hitDays >= 1) return 3;
+  if (s.drillDays >= 1) return 2;
+  if (s.sessions >= 1) return 1;
   return 0;
 }
 
@@ -43,32 +51,24 @@ export function stageOf(p: Progress, moveId: string): Stage {
 
 export function nextStep(p: Progress, moveId: string): string {
   const stage = stageOf(p, moveId);
-  const s = stats(p, moveId);
-  if (stage === 0) return 'Log it once (taught, drilled or hit) to mark it Seen.';
-  if (stage === 1) {
-    const left = Math.max(1, RULES.drillSessions - s.drillSessions);
-    return `Drill it in ${left} more session${left > 1 ? 's' : ''} to reach Drilled.`;
-  }
+  if (stage === 0) return 'Log it once to mark it Seen.';
+  if (stage === 1) return 'Drill it once to reach Drilled.';
   if (stage === 2) return 'Land it once in live rolling to reach Hit.';
   if (stage === 3) {
-    const h = Math.max(0, RULES.masterHits - s.hits);
-    const ss = Math.max(0, RULES.masterSessions - s.hitSessions);
-    const parts = [h ? `${h} more live hit${h > 1 ? 's' : ''}` : '', ss ? `hits in ${ss} more session${ss > 1 ? 's' : ''}` : ''].filter(Boolean);
-    return `For Mastered: ${parts.join(' and ')}.`;
+    const left = Math.max(1, RULES.masterDays - stats(p, moveId).hitDays);
+    return `Hit it live on ${left} more day${left > 1 ? 's' : ''} to reach Mastered.`;
   }
   return 'Mastered. It works on resisting partners.';
 }
 
 /**
- * Merge one logged move into a session. Logging never downgrades a move within
- * the same session; repeated live hits add up.
+ * Merge one logged move into a session (one session per training day).
+ * Logging never downgrades a move within the same session: Seen < Drilled < Hit live.
  */
-export function addItem(session: Session, moveId: string, kind: Kind, hits = 1): Session {
+export function addItem(session: Session, moveId: string, kind: Kind): Session {
   const cur = session.items[moveId];
-  let next: SessionItem | undefined;
-  if (kind === 'hit') next = { kind: 'hit', hits: (cur?.kind === 'hit' ? cur.hits : 0) + Math.max(1, hits) };
-  else if (!cur || KIND_RANK[cur.kind] < KIND_RANK[kind]) next = { kind, hits: 0 };
-  return next ? { ...session, items: { ...session.items, [moveId]: next } } : session;
+  if (cur && KIND_RANK[cur.kind] >= KIND_RANK[kind]) return session;
+  return { ...session, items: { ...session.items, [moveId]: { kind, hits: kind === 'hit' ? 1 : 0 } } };
 }
 
 export function localDate(d = new Date()): string {
