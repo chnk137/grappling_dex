@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addItem, BACKUP_FORMAT, describeItem, liveRecord, renameKeys, splitKey, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
+import { addItem, ago, BACKUP_FORMAT, describeItem, isRusty, liveRecord, renameKeys, splitKey, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
 
 const session = (date: string, items: Session['items'] = {}): Session => ({ id: date, date, items });
 const prog = (sessions: Session[], base: Progress['base'] = {}): Progress => ({ sessions, base });
@@ -187,4 +187,16 @@ test('renameKeys moves logs from a merged position and combines clashes', () => 
   const moved = renameKeys(p, k => (k.pos === 'topHalf' ? `${k.moveId}@half:top` : null));
   assert.deepEqual(moved.sessions[0].items, { 'kimura@half:top': { kind: 'hit', hits: 1, caught: 1 }, 'armbar@closed': { kind: 'seen', hits: 0 } });
   assert.equal(renameKeys(moved, () => null), moved, 'unchanged progress is returned as-is');
+});
+
+test('last hit date, ago() and rusty moves', () => {
+  const p = prog([session('2026-06-01', { armbar: { kind: 'hit', hits: 1 } }), session('2026-11-01', { armbar: { kind: 'drilled', hits: 0 } })]);
+  const st = stats(p, 'armbar');
+  assert.equal(st.lastHit, '2026-06-01');
+  assert.equal(st.last, '2026-11-01');
+  assert.equal(isRusty(st, '2026-11-24'), true, 'drilling does not keep a live skill fresh');
+  assert.equal(isRusty(st, '2026-07-01'), false);
+  assert.equal(ago('2026-06-01', '2026-11-24'), '6 months ago');
+  assert.equal(ago('2026-11-10', '2026-11-24'), '2 weeks ago');
+  assert.equal(ago('2026-11-24', '2026-11-24'), 'today');
 });

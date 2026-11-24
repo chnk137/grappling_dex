@@ -1941,6 +1941,134 @@
    "to": "side",
    "note": "Lapel through the leg locks their foot; off-balance and come up.",
    "gi": true
+  },
+  {
+   "id": "hitchhiker",
+   "name": "Hitchhiker escape",
+   "type": "escape",
+   "from": [
+    "sMount",
+    "techMount"
+   ],
+   "to": "half",
+   "note": "Armbar coming: thumb out, rotate toward their legs to pull the arm free, then recover guard.",
+   "gi": false
+  },
+  {
+   "id": "turnIn",
+   "name": "Turn in to half guard",
+   "type": "escape",
+   "from": [
+    "techMount",
+    "sMount"
+   ],
+   "to": "half",
+   "note": "Frame on the knee by your face, turn in toward them and pummel a leg back in.",
+   "gi": false
+  },
+  {
+   "id": "nsEscape",
+   "name": "North-south turn-in",
+   "type": "escape",
+   "from": [
+    "ns"
+   ],
+   "to": "half",
+   "note": "Frame on their hips, walk your feet away and turn in to face them.",
+   "gi": false
+  },
+  {
+   "id": "crucifixEscape",
+   "name": "Crucifix escape",
+   "type": "escape",
+   "from": [
+    "crucifix"
+   ],
+   "to": "turtle",
+   "note": "Turn into them and pull the trapped elbow back under before they lock the arm.",
+   "gi": false
+  },
+  {
+   "id": "fhlEscape",
+   "name": "Front headlock escape",
+   "type": "escape",
+   "from": [
+    "frontHeadlock"
+   ],
+   "to": "standing",
+   "note": "Clear the wrist off your neck, circle away from the choking arm and pop your head out.",
+   "gi": false
+  },
+  {
+   "id": "kneeLine",
+   "name": "Clear the knee line",
+   "type": "escape",
+   "from": [
+    "saddle",
+    "outsideAshi",
+    "slx",
+    "crossAshi"
+   ],
+   "to": null,
+   "note": "Hide the heel and turn your knee so their legs can't stay past it, then free the foot.",
+   "gi": false
+  },
+  {
+   "id": "fiftyEscape",
+   "name": "50-50 escape",
+   "type": "escape",
+   "from": [
+    "fifty",
+    "backside50"
+   ],
+   "to": null,
+   "note": "Hide your heel, clear their outside leg and stand or backstep out.",
+   "gi": false
+  },
+  {
+   "id": "shinFrame",
+   "name": "Shin frame retention",
+   "type": "escape",
+   "from": [
+    "half",
+    "kneeShield",
+    "dlr",
+    "butterfly",
+    "spider",
+    "lasso",
+    "shin"
+   ],
+   "to": null,
+   "note": "Slide a shin across their hips to keep them off your chest and square back up to guard.",
+   "gi": false
+  },
+  {
+   "id": "inversion",
+   "name": "Inversion recovery",
+   "type": "escape",
+   "from": [
+    "dlr",
+    "rdlr",
+    "spider",
+    "butterfly",
+    "xguard"
+   ],
+   "to": null,
+   "note": "Roll onto your shoulders to swing your legs back in front of them before the pass finishes.",
+   "gi": false
+  },
+  {
+   "id": "reguard",
+   "name": "Re-guard",
+   "type": "escape",
+   "from": [
+    "hq",
+    "bodyLockTop",
+    "legDragTop"
+   ],
+   "to": "half",
+   "note": "Pass half done: frame on head and hip, shrimp away and pummel a knee back in.",
+   "gi": false
   }
  ],
  "merged": {

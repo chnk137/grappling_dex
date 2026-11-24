@@ -1,5 +1,5 @@
 import raw from './catalog.json';
-import { emptyLive, itemKey, liveRecord, posStage, renameKeys, stageOf, type Live, type Progress, type SideFilter } from '../lib/progress';
+import { emptyLive, isRusty, itemKey, liveRecord, posStage, posStats, renameKeys, stageOf, type Live, type Progress, type SideFilter } from '../lib/progress';
 
 export type MoveType = 'sub' | 'sweep' | 'pass' | 'move' | 'escape';
 export type Tier = 'stand' | 'guard' | 'leg' | 'pass' | 'pin' | 'dom';
@@ -56,7 +56,7 @@ export const hasSides = (posId: string) => positionById.get(posId)?.tier !== 'st
 
 /**
  * Which side(s) the attacker can be on when this move starts from this position.
- * Passes come from top; sweeps and escapes from bottom; submissions and
+ * Passes come from top; sweeps and escapes from bottom (escapes from leg entanglements: the defending side); submissions and
  * transitions from the bottom of guards and leg entanglements, and from the top
  * of pins. A move's `sides` overrides this (a kimura works from both sides of
  * half guard). Defending credits the other side. Empty when the position has no sides.
@@ -66,8 +66,9 @@ export function attackSides(t: Technique, posId: string): Side[] {
   const o = t.sides?.[posId];
   if (o) return o;
   if (t.type === 'pass') return ['top'];
-  if (t.type === 'sweep' || t.type === 'escape') return ['bottom'];
   const tier = positionById.get(posId)?.tier;
+  if (t.type === 'escape') return [tier === 'leg' ? 'top' : 'bottom']; // in leg entanglements, the defender escapes
+  if (t.type === 'sweep') return ['bottom'];
   return [tier === 'guard' || tier === 'leg' ? 'bottom' : 'top'];
 }
 export const flipSide = (s: Side): Side => (s === 'top' ? 'bottom' : 'top');
@@ -120,7 +121,8 @@ export function positionRecord(p: Progress, posId: string, side: Side | null): L
   return out;
 }
 
-export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in'; have: number; total: number }
+/** `rusty`: of the moves you have, how many haven't been hit live in RUSTY_DAYS. */
+export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in'; have: number; total: number; rusty: number }
 
 /**
  * How much of your game exists at a position, counted at Hit or better.
@@ -128,8 +130,12 @@ export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in';
  * With `side`, only moves attacked from that side (and no ways in).
  */
 export function scorecard(p: Progress, posId: string, side?: Side): ScoreRow[] {
-  const at = (list: Technique[]) => ({ have: list.filter(t => posStage(p, t.id, posId, side && sideFilter(t, posId, side)) >= 3).length, total: list.length });
-  const into = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length });
+  const at = (list: Technique[]) => {
+    const sf = (t: Technique) => (side ? sideFilter(t, posId, side) : undefined);
+    const have = list.filter(t => posStage(p, t.id, posId, sf(t)) >= 3);
+    return { have: have.length, total: list.length, rusty: have.filter(t => isRusty(posStats(p, t.id, posId, sf(t)))).length };
+  };
+  const into = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length, rusty: 0 });
   const rows: ScoreRow[] = [];
   const from = techniques.filter(t => t.from.includes(posId) && (!side || attackSides(t, posId).includes(side)));
   const attacks = from.filter(t => t.type === 'sub' || t.type === 'sweep' || t.type === 'move');
@@ -159,17 +165,61 @@ export function nearby(p: Progress, id: string): boolean {
   return !!t && t.from.some(h => h === 'standing' || positionActive(p, h));
 }
 
-export interface Gap { positionId: string; text: string; weight: number }
+/** A position, or one side of it, e.g. "Closed guard (top)". */
+export function placeLabel(posId: string, side: Side | null): string {
+  const name = positionById.get(posId)?.name ?? posId;
+  return side && hasSides(posId) ? `${name} (${sideLabel(posId, side).toLowerCase()})` : name;
+}
 
-export function gaps(p: Progress, limit = 4): Gap[] {
+/**
+ * Whether you play this side of a position: you logged a move attacked from
+ * that side, or defended there. `side` null = anywhere at the position.
+ */
+export function sideActive(p: Progress, posId: string, side: Side | null): boolean {
+  if (!side) return positionActive(p, posId);
+  const attacked = techniques.some(t => t.from.includes(posId) && attackSides(t, posId).includes(side) && posStage(p, t.id, posId, sideFilter(t, posId, side)) >= 1);
+  if (attacked) return true;
+  const r = positionRecord(p, posId, side);
+  return r.landed + r.missed + r.stopped + r.caught > 0;
+}
+
+/**
+ * Something to work on. `moveId` is set when a move keeps catching you; otherwise
+ * it's a missing kind of move at `positionId` (on `side`).
+ */
+export interface Gap { positionId: string; side: Side | null; moveId?: string; text: string; weight: number }
+
+/** Caught by the same move this many times (more than you stopped it) makes it a gap. */
+export const CAUGHT_GAP = 2;
+
+export function gaps(p: Progress, limit = 5): Gap[] {
   const out: Gap[] = [];
+  // Moves that keep catching you: the most honest signal, so they rank first.
+  for (const t of techniques) {
+    for (const pos of t.from) {
+      const sides = attackSides(t, pos);
+      for (const a of sides.length ? sides : [null]) {
+        const r = liveRecord(p, t.id, pos, a && sides.length > 1 ? { side: a, dflt: sides[0] } : undefined);
+        if (r.caught < CAUGHT_GAP || r.caught <= r.stopped) continue;
+        const mine = a ? flipSide(a) : null;
+        out.push({
+          positionId: pos, side: mine, moveId: t.id, weight: 10 + r.caught - r.stopped,
+          text: `${placeLabel(pos, mine)}: caught in ${t.name} ${r.caught}×${r.stopped ? `, stopped it ${r.stopped}×` : ''}`,
+        });
+      }
+    }
+  }
+  // Sides you play with nothing you can hit yet. Only sides you've logged count.
   for (const pos of positions) {
-    if (!positionActive(p, pos.id)) continue;
-    for (const r of scorecard(p, pos.id)) {
-      if (r.have) continue;
-      if (r.label === 'Escapes') out.push({ positionId: pos.id, weight: 3, text: `No escape from bottom of ${pos.name} at Hit yet` });
-      else if (r.label === 'Attacks') out.push({ positionId: pos.id, weight: 2, text: `No attack from ${pos.name} at Hit yet` });
-      else if (r.label === 'Passes') out.push({ positionId: pos.id, weight: 1, text: `No pass for ${pos.name} at Hit yet` });
+    for (const side of hasSides(pos.id) ? (['bottom', 'top'] as Side[]) : [null]) {
+      if (!sideActive(p, pos.id, side)) continue;
+      for (const r of scorecard(p, pos.id, side ?? undefined)) {
+        if (r.have || r.label === 'Ways in') continue;
+        const where = placeLabel(pos.id, side);
+        if (r.label === 'Escapes') out.push({ positionId: pos.id, side, weight: 3, text: pos.tier === 'guard' ? `${where}: no way to keep your guard you can hit yet` : `${where}: no escape you can hit yet` });
+        else if (r.label === 'Attacks') out.push({ positionId: pos.id, side, weight: 2, text: `${where}: no attack you can hit yet` });
+        else if (r.label === 'Passes') out.push({ positionId: pos.id, side, weight: 1, text: `${where}: no pass you can hit yet` });
+      }
     }
   }
   return out.sort((a, b) => b.weight - a.weight).slice(0, limit);

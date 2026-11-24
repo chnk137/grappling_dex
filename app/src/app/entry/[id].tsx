@@ -8,7 +8,7 @@ import {
   sideLabel, techniqueById, techniques, TIERS, TYPES, type MoveType, type Side, type Technique,
 } from '../../data/catalog';
 import {
-  describeItem, KIND_LABEL, KIND_LONG, lastPosition, liveRecord, localDate, nextStep, posStats, RULES, splitKey, stats, STAGES, derivedStage,
+  ago, describeItem, isRusty, KIND_LABEL, RUSTY_DAYS, KIND_LONG, lastPosition, liveRecord, localDate, nextStep, posStats, RULES, splitKey, stats, STAGES, derivedStage,
   type Live, type LogKind, type Stage,
 } from '../../lib/progress';
 import { SPRITES } from '../../data/sprites';
@@ -16,14 +16,14 @@ import { useProgress } from '../../lib/store';
 import { colors, radius, space, typeColor } from '../../theme';
 
 export default function EntryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, side } = useLocalSearchParams<{ id: string; side?: string }>();
   const move = techniqueById.get(id);
   const pos = positionById.get(id);
   return (
     <>
       <Stack.Screen options={{ title: entryNo.get(id) ?? '' }} />
       <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.body}>
-        {move ? <MoveEntry t={move} /> : pos ? <PositionEntry id={pos.id} /> : <Text style={styles.muted}>{"This entry doesn't exist."}</Text>}
+        {move ? <MoveEntry t={move} /> : pos ? <PositionEntry id={pos.id} side={side === 'top' || side === 'bottom' ? side : undefined} /> : <Text style={styles.muted}>{"This entry doesn't exist."}</Text>}
       </ScrollView>
     </>
   );
@@ -136,6 +136,7 @@ function MoveEntry({ t }: { t: Technique }) {
           </View>
           <Text style={styles.muted}>Hit live on {Math.min(st.hitDays, RULES.masterDays)} of {RULES.masterDays} days</Text>
         </View>
+        {st.lastHit && <Text style={[styles.muted, isRusty(st) && styles.rusty]}>{`Last hit live ${ago(st.lastHit)}${isRusty(st) ? '. Hit it again to keep it sharp.' : ''}`}</Text>}
         <Text style={styles.small}>{st.sessions ? `Logged in ${st.sessions} session${st.sessions > 1 ? 's' : ''}` : 'Not logged yet.'}</Text>
         <SectionLabel>Already know it? Starting stage</SectionLabel>
         <View style={styles.baseRow}>
@@ -176,6 +177,8 @@ function MoveEntry({ t }: { t: Technique }) {
   );
 }
 
+const rustyNote = (n: number) => `${n} move${n > 1 ? 's' : ''} here ${n > 1 ? "haven't" : "hasn't"} been hit live in ${Math.round(RUSTY_DAYS / 30)}+ months`;
+
 /** Offense = landed of attempts; defense = stopped of times they tried it. */
 function LiveBars({ rec, empty }: { rec: Live; empty: string }) {
   const att = rec.landed + rec.missed;
@@ -191,11 +194,11 @@ function LiveBars({ rec, empty }: { rec: Live; empty: string }) {
   );
 }
 
-function PositionEntry({ id }: { id: string }) {
+function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
   const { progress } = useProgress();
   const p = positionById.get(id)!;
   const sided = hasSides(id);
-  const [side, setSide] = useState<Side>(() => mainSide(id));
+  const [side, setSide] = useState<Side>(() => startSide ?? mainSide(id));
   const cur = sided ? side : undefined;
   const rows = scorecard(progress, id, cur);
   const waysIn = sided ? scorecard(progress, id).find(r => r.label === 'Ways in') : undefined;
@@ -229,6 +232,7 @@ function PositionEntry({ id }: { id: string }) {
       <View style={styles.box}>
         <View style={styles.boxHead}><Text style={styles.stage}>{cur ? `${sideLabel(id, cur)} scorecard` : 'Scorecard'}</Text><Text style={styles.small}>moves at Hit or better</Text></View>
         {rows.map(r => <Bar key={r.label} label={r.label} value={r.have} max={r.total} right={`${r.have}/${r.total}`} warn={active && !r.have && r.label !== 'Ways in'} />)}
+        {rows.some(r => r.rusty) && <Text style={styles.rusty}>{rustyNote(rows.reduce((a, r) => a + r.rusty, 0))}</Text>}
         {!rows.length && <Text style={styles.muted}>No moves from this side in the dex yet. Defenses still count below.</Text>}
         {!active && <Text style={styles.muted}>Log any move from here to start tracking this position.</Text>}
         <SectionLabel>Live record</SectionLabel>
@@ -297,4 +301,5 @@ const styles = StyleSheet.create({
   baseOn: { backgroundColor: colors.brass, borderColor: colors.brass },
   baseText: { color: colors.ink, fontSize: 13, fontWeight: '600' },
   bars: { gap: 10 },
+  rusty: { color: colors.brass, fontSize: 13.5 },
 });

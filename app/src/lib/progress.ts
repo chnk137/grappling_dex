@@ -64,7 +64,7 @@ export const RULES = { masterDays: 5 } as const;
 const KIND_RANK: Record<Kind, number> = { seen: 1, drilled: 2, hit: 3 };
 
 /** How many sessions (training days) a move was logged in, by its best kind that day. */
-export interface MoveStats { sessions: number; drillDays: number; hitDays: number; last: string | null }
+export interface MoveStats { sessions: number; drillDays: number; hitDays: number; last: string | null; lastHit: string | null }
 
 /** Best kind logged in one session for `moveId`, from `pos` only (plus old entries with no position), or from anywhere. */
 function bestKind(session: Session, moveId: string, pos?: string, sf?: SideFilter): Kind | null {
@@ -80,13 +80,13 @@ function bestKind(session: Session, moveId: string, pos?: string, sf?: SideFilte
 }
 
 function tally(p: Progress, moveId: string, pos?: string, sf?: SideFilter): MoveStats {
-  const s: MoveStats = { sessions: 0, drillDays: 0, hitDays: 0, last: null };
+  const s: MoveStats = { sessions: 0, drillDays: 0, hitDays: 0, last: null, lastHit: null };
   for (const session of p.sessions) {
     const kind = bestKind(session, moveId, pos, sf);
     if (!kind) continue;
     s.sessions++;
     if (kind !== 'seen') s.drillDays++;
-    if (kind === 'hit') s.hitDays++;
+    if (kind === 'hit') { s.hitDays++; if (!s.lastHit || session.date > s.lastHit) s.lastHit = session.date; }
     if (!s.last || session.date > s.last) s.last = session.date;
   }
   return s;
@@ -229,6 +229,29 @@ export function removeMove(session: Session, moveId: string): Session {
   const items = Object.fromEntries(Object.entries(session.items).filter(([k]) => splitKey(k).moveId !== moveId));
   return { ...session, items };
 }
+
+/** A move you can hit but haven't hit live in this many days is getting rusty. */
+export const RUSTY_DAYS = 90;
+
+/** Whole days from `date` (YYYY-MM-DD) to `today`. */
+export function daysSince(date: string, today = localDate()): number {
+  const t = (d: string) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+  return Math.round((t(today) - t(date)) / 86400000);
+}
+
+/** "today", "3 days ago", "2 weeks ago", "4 months ago". */
+export function ago(date: string, today = localDate()): string {
+  const d = daysSince(date, today);
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  if (d < 14) return `${d} days ago`;
+  if (d < 60) return `${Math.round(d / 7)} weeks ago`;
+  if (d < 730) return `${Math.round(d / 30.4)} months ago`;
+  return `${Math.round(d / 365)} years ago`;
+}
+
+/** Hit live before, but not in the last RUSTY_DAYS days. */
+export const isRusty = (s: MoveStats, today = localDate()) => !!s.lastHit && daysSince(s.lastHit, today) >= RUSTY_DAYS;
 
 export function localDate(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

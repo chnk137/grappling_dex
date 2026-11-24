@@ -66,9 +66,13 @@ main { flex: 1; display: flex; min-height: 0; }
 .tile span { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
 .gaps { border: 1px solid var(--line); border-left: 3px solid var(--gap); border-radius: 10px; padding: 10px 12px; margin-bottom: 18px; background: var(--bg-2); display: flex; flex-direction: column; gap: 6px; }
 .gaps strong { font: 600 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--gap); }
-.gaps button { all: unset; cursor: pointer; color: var(--ink); line-height: 1.45; }
-.gaps button:hover { text-decoration: underline; }
-.gaps button:focus-visible { outline: 2px solid var(--brass); }
+.gaps .gap { display: flex; align-items: center; gap: 10px; line-height: 1.45; color: var(--ink); }
+.gaps .gap span { flex: 1; }
+.gaps .gap.caught span { font-weight: 700; }
+.gaps .fix { flex-shrink: 0; border: 1px solid var(--gap); background: transparent; color: var(--gap); border-radius: 6px; padding: 5px 10px; font: 700 12px var(--font-body); cursor: pointer; }
+.gaps .fix:hover { background: rgba(242, 118, 109, .12); }
+.gaps .fix:focus-visible { outline: 2px solid var(--brass); }
+.next.rusty, .stagebox .next.rusty { color: var(--brass); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 8px; margin-bottom: 22px; }
 .card { display: flex; flex-direction: column; gap: 5px; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
 .card:hover { border-color: var(--muted); }
@@ -285,6 +289,13 @@ aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1e
 .x { all: unset; cursor: pointer; color: var(--muted); padding: 2px 6px; }
 .x:focus-visible { outline: 2px solid var(--brass); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-weight: 600; z-index: 30; }
+/* Phones: move-to-position lines turn the map into a web, so keep them faint unless highlighted. */
+@media (max-width: 760px) {
+  .tlink { stroke-opacity: .07; }
+  .tolink { stroke-opacity: .05; }
+  .chan { stroke-opacity: .35; }
+  .hub text { font-size: 16px; }
+}
 @media (max-width: 760px) {
   main { flex-direction: column; }
   aside { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 46%; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -408,7 +419,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 16</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 17</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -605,7 +616,17 @@ const TECHS = [
   ["waiterSlx","Waiter to single leg X","move",["waiterGuard"],"slx","Lift their leg from waiter and switch to single leg X."],
   ["octopusBack","Octopus back take","move",["octopus"],"back","Reach across their back from half guard and climb to the back."],
   ["octopusSweep","Octopus sweep","sweep",["octopus"],"side","Drive into them from the octopus grip and come up on top."],
-  ["wormSweep","Worm guard sweep","sweep",["worm"],"side","Lapel through the leg locks their foot; off-balance and come up.",true]
+  ["wormSweep","Worm guard sweep","sweep",["worm"],"side","Lapel through the leg locks their foot; off-balance and come up.",true],
+  ["hitchhiker","Hitchhiker escape","escape",["sMount","techMount"],"half","Armbar coming: thumb out, rotate toward their legs to pull the arm free, then recover guard."],
+  ["turnIn","Turn in to half guard","escape",["techMount","sMount"],"half","Frame on the knee by your face, turn in toward them and pummel a leg back in."],
+  ["nsEscape","North-south turn-in","escape",["ns"],"half","Frame on their hips, walk your feet away and turn in to face them."],
+  ["crucifixEscape","Crucifix escape","escape",["crucifix"],"turtle","Turn into them and pull the trapped elbow back under before they lock the arm."],
+  ["fhlEscape","Front headlock escape","escape",["frontHeadlock"],"standing","Clear the wrist off your neck, circle away from the choking arm and pop your head out."],
+  ["kneeLine","Clear the knee line","escape",["saddle","outsideAshi","slx","crossAshi"],null,"Hide the heel and turn your knee so their legs can't stay past it, then free the foot."],
+  ["fiftyEscape","50-50 escape","escape",["fifty","backside50"],null,"Hide your heel, clear their outside leg and stand or backstep out."],
+  ["shinFrame","Shin frame retention","escape",["half","kneeShield","dlr","butterfly","spider","lasso","shin"],null,"Slide a shin across their hips to keep them off your chest and square back up to guard."],
+  ["inversion","Inversion recovery","escape",["dlr","rdlr","spider","butterfly","xguard"],null,"Roll onto your shoulders to swing your legs back in front of them before the pass finishes."],
+  ["reguard","Re-guard","escape",["hq","bodyLockTop","legDragTop"],"half","Pass half done: frame on head and hip, shrimp away and pummel a knee back in."]
 ].map(([id,name,type,from,to,note,gi]) => ({ id, name, type, from, to, note, gi: !!gi, hub: false }));
 
 const hubById = new Map(HUBS.map(h => [h.id, h]));
@@ -706,14 +727,14 @@ function bestKind(s, id, pos, sf) {
 }
 // Counts training days (sessions) by the best thing logged for the move that day.
 function stats(id, pos, sf) {
-  let seenS = 0, drillS = 0, hitS = 0, last = null;
+  let seenS = 0, drillS = 0, hitS = 0, last = null, lastHit = null;
   for (const s of data.sessions) {
     const k = bestKind(s, id, pos, sf); if (!k) continue;
     seenS++; if (k !== "seen") drillS++;
-    if (k === "hit") hitS++;
+    if (k === "hit") { hitS++; if (!lastHit || s.d > lastHit) lastHit = s.d; }
     if (!last || s.d > last) last = s.d;
   }
-  return { seenS, drillS, hitS, last };
+  return { seenS, drillS, hitS, last, lastHit };
 }
 // A move's stage from one position, for scorecards and gaps. Starting stages count everywhere.
 const posStage = (id, pos, sf) => Math.max(data.base[id] || 0, derived(stats(id, pos, sf)));
@@ -747,7 +768,11 @@ const pips = s => `<span class="pips" aria-hidden="true">${[1, 2, 3, 4].map(i =>
 // Position scorecard: how much of your game exists here (counted at Hit or better).
 // Moves from here count only when logged from here; ways in count from anywhere.
 function scorecard(h, side) {
-  const at = list => ({ have: list.filter(t => posStage(t.id, h.id, side && sideFilter(t, h.id, side)) >= 3).length, total: list.length });
+  const at = list => {
+    const sf = t => side ? sideFilter(t, h.id, side) : undefined;
+    const have = list.filter(t => posStage(t.id, h.id, sf(t)) >= 3);
+    return { have: have.length, total: list.length, rusty: have.filter(t => isRusty(stats(t.id, h.id, sf(t)))).length };
+  };
   const into = list => ({ have: list.filter(t => stage(t.id) >= 3).length, total: list.length });
   const rows = [];
   const from = TECHS.filter(t => t.from.includes(h.id) && (!side || attackSides(t, h.id).includes(side)));
@@ -771,8 +796,9 @@ function attackSides(t, posId) {
   if (!hasSides(posId)) return [];
   const o = SIDES[t.id]?.[posId]; if (o) return o;
   if (t.type === "pass") return ["top"];
-  if (t.type === "sweep" || t.type === "escape") return ["bottom"];
   const tier = hubById.get(posId)?.tier;
+  if (t.type === "escape") return [tier === "leg" ? "top" : "bottom"]; // in leg entanglements, the defender escapes
+  if (t.type === "sweep") return ["bottom"];
   return [tier === "guard" || tier === "leg" ? "bottom" : "top"];
 }
 function sideFilter(t, posId, side) { const ss = attackSides(t, posId); return ss.length > 1 ? { side, dflt: ss[0] } : undefined; }
@@ -844,21 +870,54 @@ function liveBars(rec, empty) {
 }
 
 function hubActive(h) { return TECHS.some(t => (t.from.includes(h.id) && posStage(t.id, h.id) >= 1) || (t.to === h.id && stage(t.id) >= 1)); }
+// A position, or one side of it, e.g. "Closed guard (top)".
+const placeLabel = (posId, side) => side && hasSides(posId) ? `${hubById.get(posId).name} (${sideLabel(posId, side).toLowerCase()})` : hubById.get(posId).name;
+// Whether you play this side of a position: a move attacked from there was logged, or you defended there.
+function sideActive(h, side) {
+  if (!side) return hubActive(h);
+  if (TECHS.some(t => t.from.includes(h.id) && attackSides(t, h.id).includes(side) && posStage(t.id, h.id, sideFilter(t, h.id, side)) >= 1)) return true;
+  const r = positionRecord(h.id, side);
+  return r.landed + r.missed + r.stopped + r.caught > 0;
+}
+// Caught by the same move this many times (more than you stopped it) makes it a gap.
+const CAUGHT_GAP = 2;
+// Gaps: { id (what "Fix this" opens), pos, side, text, w, caught }.
 function gaps() {
   const out = [];
-  HUBS.forEach(h => {
-    if (!hubActive(h)) return;
-    scorecard(h).forEach(r => {
-      if (r.have) return;
-      if (r.label === "Escapes") out.push({ id: h.id, w: 3, text: `No escape from bottom of ${h.name} at Hit yet` });
-      else if (r.label === "Attacks") out.push({ id: h.id, w: 2, text: `No attack from ${h.name} at Hit yet` });
-      else if (r.label === "Passes") out.push({ id: h.id, w: 1, text: `No pass for ${h.name} at Hit yet` });
+  // Moves that keep catching you: the most honest signal, so they rank first.
+  TECHS.forEach(t => t.from.forEach(pos => {
+    const ss = attackSides(t, pos);
+    (ss.length ? ss : [null]).forEach(a => {
+      const r = liveRecord(t.id, pos, a && ss.length > 1 ? { side: a, dflt: ss[0] } : undefined);
+      if (r.caught < CAUGHT_GAP || r.caught <= r.stopped) return;
+      const mine = a ? flip(a) : null;
+      out.push({ id: t.id, pos, side: mine, caught: true, w: 10 + r.caught - r.stopped, text: `${placeLabel(pos, mine)}: caught in ${t.name} ${r.caught}×${r.stopped ? `, stopped it ${r.stopped}×` : ""}` });
     });
-  });
-  return out.sort((a, b) => b.w - a.w).slice(0, 4);
+  }));
+  // Sides you play with nothing you can hit yet. Only sides you've logged count.
+  HUBS.forEach(h => (hasSides(h.id) ? ["bottom", "top"] : [null]).forEach(side => {
+    if (!sideActive(h, side)) return;
+    scorecard(h, side || undefined).forEach(r => {
+      if (r.have || r.label === "Ways in") return;
+      const where = placeLabel(h.id, side), g = { id: h.id, pos: h.id, side };
+      if (r.label === "Escapes") out.push({ ...g, w: 3, text: h.tier === "guard" ? `${where}: no way to keep your guard you can hit yet` : `${where}: no escape you can hit yet` });
+      else if (r.label === "Attacks") out.push({ ...g, w: 2, text: `${where}: no attack you can hit yet` });
+      else if (r.label === "Passes") out.push({ ...g, w: 1, text: `${where}: no pass you can hit yet` });
+    });
+  }));
+  return out.sort((a, b) => b.w - a.w).slice(0, 5);
 }
 
 // ---------- Logging ----------
+// A move you can hit but haven't hit live in this many days is getting rusty.
+const RUSTY_DAYS = 90;
+const daysSince = (d, today = todayISO()) => { const t = x => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)); return Math.round((t(today) - t(d)) / 864e5); };
+function ago(d) {
+  const n = daysSince(d);
+  return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 14 ? `${n} days ago` : n < 60 ? `${Math.round(n / 7)} weeks ago` : n < 730 ? `${Math.round(n / 30.4)} months ago` : `${Math.round(n / 365)} years ago`;
+}
+const isRusty = st => !!st.lastHit && daysSince(st.lastHit) >= RUSTY_DAYS;
+const rustyNote = n => `${n} move${n > 1 ? "s" : ""} here ${n > 1 ? "haven't" : "hasn't"} been hit live in ${Math.round(RUSTY_DAYS / 30)}+ months`;
 function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 const fmtDate = iso => new Date(iso + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: iso.slice(0, 4) === todayISO().slice(0, 4) ? undefined : "numeric" });
 function sessionFor(d, create) {
@@ -971,7 +1030,8 @@ gNodes.selectAll(".node")
   .on("click", (e, d) => { e.stopPropagation(); select(d.id); })
   .on("keydown", (e, d) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(d.id); } });
 svg.on("click", () => select(null));
-const zoom = d3.zoom().scaleExtent([0.15, 3]).on("zoom", e => { world.attr("transform", e.transform); svg.classed("zoomed-out", e.transform.k < 0.85); });
+// Move labels only show once zoomed in far enough to read them (further on phones).
+const zoom = d3.zoom().scaleExtent([0.15, 3]).on("zoom", e => { world.attr("transform", e.transform); svg.classed("zoomed-out", e.transform.k < (isPhone ? 1.3 : 0.85)); });
 svg.call(zoom);
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function fit() {
@@ -980,6 +1040,20 @@ function fit() {
   const x0 = d3.min(xs) - 60, x1 = d3.max(xs) + 160, y0 = d3.min(ys) - 40, y1 = d3.max(ys) + 60;
   const k = Math.min(box.width / (x1 - x0), box.height / (y1 - y0)) || 0.5;
   svg.call(zoom.transform, d3.zoomIdentity.translate((box.width - (x1 - x0) * k) / 2 - x0 * k, (box.height - (y1 - y0) * k) / 2 - y0 * k).scale(k));
+}
+// Phones: the whole map is too small to read, so open close in on what you train
+// (positions you're active in and their neighbours), at a zoom where labels are readable.
+function fitPhone() {
+  const box = svg.node().getBoundingClientRect();
+  // Start on the position you logged most recently, else the one you're most active in, else closed guard.
+  let start = null;
+  for (let i = data.sessions.length - 1; i >= 0 && !start; i--) {
+    const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.pos && hubById.has(k.pos));
+    if (ks.length) start = hubById.get(ks[ks.length - 1].pos);
+  }
+  start = start || HUBS.find(hubActive) || hubById.get("closed");
+  const k = 1.05;
+  svg.call(zoom.transform, d3.zoomIdentity.translate(box.width / 2 - start.x * k, box.height / 2 - start.y * k).scale(k));
 }
 function focusOn(n) {
   const box = svg.node().getBoundingClientRect();
@@ -1123,12 +1197,17 @@ function renderPanel() {
       <p class="empty">Already know a move? Open its entry and set a starting stage. Positions score how many of their moves you can hit, and flag gaps like a missing escape.</p>
       <div class="summary">${[1, 2, 3, 4].map(k => `<div class="tile"><b>${TECHS.filter(t => stage(t.id) >= k).length}</b><span>${pips(k)} ${STAGES[k]}${k < 4 ? "+" : ""}</span></div>`).join("")}</div>
       <button class="primary" id="panelLog">Log a session</button>
-      ${(() => { const g = gaps(); return g.length ? `<div class="gaps"><strong>Gaps in your game</strong>${g.map(x => `<button data-id="${x.id}">${esc(x.text)}</button>`).join("")}</div>` : ""; })()}
+      ${(() => { const g = gaps(); return g.length ? `<div class="gaps"><strong>Gaps in your game</strong>${g.map(x => `<div class="gap${x.caught ? " caught" : ""}"><span>${esc(x.text)}</span><button class="fix" data-fix="${x.id}" data-side="${x.side || ""}" aria-label="Fix this: ${esc(x.text)}">Fix this</button></div>`).join("")}</div>` : ""; })()}
       <h3>Recent sessions</h3>
       ${recent.length ? `<div class="sessions">${recent.map(s => `<div class="sess"><div><b>${fmtDate(s.d)}</b> <span>· ${movesIn(s).length} move${movesIn(s).length === 1 ? "" : "s"}</span></div><button class="linkbtn" data-del="${s.id}">Remove</button></div>`).join("")}</div>` : `<p class="empty">No sessions yet. Your first log will show up here.</p>`}
       <h3>Key</h3>${legend()}`;
     panel.querySelector("#panelLog").onclick = () => openLog();
-    panel.querySelectorAll(".gaps [data-id]").forEach(b => b.onclick = () => select(b.dataset.id));
+    // "Fix this" opens what to work on: the move that keeps catching you, or the position on that side.
+    // (A placeholder for now: later it can link to instructionals.)
+    panel.querySelectorAll(".gaps [data-fix]").forEach(b => b.onclick = () => {
+      if (b.dataset.side && hubById.has(b.dataset.fix)) hubSide = { id: b.dataset.fix, side: b.dataset.side };
+      select(b.dataset.fix);
+    });
     panel.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
       if (b.dataset.armed) { data.sessions = data.sessions.filter(s => s.id !== b.dataset.del); commit(); toast("Session removed"); }
       else { b.dataset.armed = "1"; b.textContent = "Tap again to remove"; }
@@ -1152,6 +1231,7 @@ function renderPanel() {
       ${sided ? `<div class="sidetabs" role="tablist">${["bottom", "top"].map(sd => `<button role="tab" data-tabside="${sd}" aria-selected="${cur === sd}">${sideLabel(n.id, sd)}</button>`).join("")}</div>` : ""}
       <div class="stagebox"><div class="stagehead"><b>${cur ? sideLabel(n.id, cur) + " scorecard" : "Scorecard"}</b><span class="status">moves at Hit or better</span></div>
       <div class="score">${rows.map(srow).join("")}</div>
+      ${rows.some(r => r.rusty) ? `<p class="next rusty">${rustyNote(d3.sum(rows, r => r.rusty))}</p>` : ""}
       ${rows.length ? "" : `<p class="next">No moves from this side in the dex yet. Defenses still count below.</p>`}
       ${active ? "" : `<p class="next">Log any move from here to start tracking this position.</p>`}
       <h3>Live record</h3>${liveBars(positionRecord(n.id, cur), cur ? `Nothing logged from the ${sideLabel(n.id, cur).toLowerCase()} side yet.` : "No live rolls logged here yet.")}
@@ -1184,6 +1264,7 @@ function renderPanel() {
         }).join("")}</div></div>` : ""}
         ${ti.length ? `<div class="today"><span>Today: ${ti.map(x => `${x.text}${x.pos ? ` from ${esc(hubById.get(x.pos)?.name || x.pos)}${x.side ? ` (${x.side})` : ""}` : ""}`).join("; ")}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
         <p class="next days" aria-label="Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days"><span class="dots" aria-hidden="true">${Array.from({ length: RULES.masterDays }, (_, i) => `<i class="${i < st.hitS ? "f" : ""}"></i>`).join("")}</span> Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days</p>
+        ${st.lastHit ? `<p class="next${isRusty(st) ? " rusty" : ""}">Last hit live ${ago(st.lastHit)}${isRusty(st) ? ". Hit it again to keep it sharp." : ""}</p>` : ""}
         <p class="next">${st.seenS ? `Logged in ${st.seenS} session${st.seenS > 1 ? "s" : ""} · last ${fmtDate(st.last)}` : "Not logged yet."}</p>
         <label class="basesel" for="base">Already know it?<select id="base">${STAGES.map((l, i) => `<option value="${i}"${(data.base[n.id] || 0) === i ? " selected" : ""}>${i ? "Start at " + l : "No starting stage"}</option>`).join("")}</select></label>
       </div>
@@ -1403,7 +1484,7 @@ function setView(v) {
   const f = document.getElementById("filters");
   if (isPhone) dexEl.querySelector(".listhead").appendChild(f);
   else document.querySelector("header .search").before(f);
-  if (v === "map" && !fitted) { fit(); fitted = true; }
+  if (v === "map" && !fitted) { isPhone ? fitPhone() : fit(); fitted = true; }
   refresh();
   if (v === "map" && selected && !isPhone) focusOn(nodeById.get(selected));
 }

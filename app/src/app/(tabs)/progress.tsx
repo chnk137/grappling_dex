@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, LogFab, Pips, SectionLabel } from '../../components/ui';
-import { gaps, techniques } from '../../data/catalog';
+import { gaps, techniques, type Gap } from '../../data/catalog';
 import { pickBackup, shareBackup } from '../../lib/backup';
 import { movesIn, RULES, STAGES, type Progress } from '../../lib/progress';
 import { useProgress } from '../../lib/store';
@@ -33,6 +33,11 @@ export default function ProgressScreen() {
   const total = techniques.length * 4;
   const pct = Math.round((100 * techniques.reduce((a, t) => a + stage(t.id), 0)) / total);
   const g = gaps(progress);
+  // "Fix this" opens what to work on: the move that keeps catching you, or the position on that side.
+  // (A placeholder for now: later it can link to instructionals.)
+  const fix = (x: Gap) => router.push(x.moveId
+    ? { pathname: '/entry/[id]', params: { id: x.moveId } }
+    : { pathname: '/entry/[id]', params: { id: x.positionId, ...(x.side ? { side: x.side } : {}) } });
   const recent = [...progress.sessions].reverse().slice(0, 8);
 
   return (
@@ -59,10 +64,12 @@ export default function ProgressScreen() {
           <View style={styles.gaps}>
             <Text style={styles.gapsTitle}>Gaps in your game</Text>
             {g.map(x => (
-              <Pressable key={x.text} onPress={() => router.push({ pathname: '/entry/[id]', params: { id: x.positionId } })} style={styles.gapRow} accessibilityRole="link">
-                <Text style={styles.gapText}>{x.text}</Text>
-                <Text style={styles.chev}>›</Text>
-              </Pressable>
+              <View key={x.text} style={styles.gapRow}>
+                <Text style={[styles.gapText, x.moveId && styles.gapCaught]}>{x.text}</Text>
+                <Pressable onPress={() => fix(x)} style={({ pressed }) => [styles.fixBtn, pressed && { opacity: 0.7 }]} accessibilityRole="button" accessibilityLabel={`Fix this: ${x.text}`} hitSlop={6}>
+                  <Text style={styles.fixText}>Fix this</Text>
+                </Pressable>
+              </View>
             ))}
           </View>
         )}
@@ -127,9 +134,11 @@ const styles = StyleSheet.create({
   tileLabel: { color: colors.muted, fontSize: 12 },
   gaps: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, borderLeftWidth: 3, borderLeftColor: colors.gap, backgroundColor: colors.bg2, padding: space.md, gap: 2 },
   gapsTitle: { color: colors.gap, fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4 },
-  gapRow: { flexDirection: 'row', alignItems: 'center', minHeight: 40, gap: 8 },
-  gapText: { flex: 1, color: colors.ink, fontSize: 15 },
-  chev: { color: colors.muted, fontSize: 20 },
+  gapRow: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 10, paddingVertical: 4 },
+  gapText: { flex: 1, color: colors.ink, fontSize: 15, lineHeight: 20 },
+  gapCaught: { fontWeight: '700' },
+  fixBtn: { minHeight: 34, paddingHorizontal: 12, justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.gap },
+  fixText: { color: colors.gap, fontSize: 13, fontWeight: '700' },
   sess: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44, borderBottomWidth: 1, borderBottomColor: colors.line },
   sessDate: { color: colors.ink, fontSize: 15, fontWeight: '600' },
   muted: { color: colors.muted, fontWeight: '400', fontSize: 14 },
