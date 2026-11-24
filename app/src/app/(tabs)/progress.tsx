@@ -104,6 +104,9 @@ export default function ProgressScreen() {
         <Text style={styles.help}>
           <Text style={styles.b}>Seen</Text> when you watch it · <Text style={styles.b}>Drilled</Text> when you drill it · <Text style={styles.b}>Hit</Text> when you land it live · <Text style={styles.b}>Mastered</Text> when you&apos;ve hit it live on {RULES.masterDays} different days.
         </Text>
+        <Text style={styles.help}>
+          In live rolls, log <Text style={styles.b}>Attacked</Text> (landed or missed) and <Text style={styles.b}>Defended</Text> (stopped or caught). Only a landed attack counts toward stages; the rest builds each move&apos;s live record and each position&apos;s top and bottom scorecards.
+        </Text>
       </ScrollView>
       <LogFab />
     </View>

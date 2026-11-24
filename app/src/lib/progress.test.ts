@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addItem, BACKUP_FORMAT, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
+import { addItem, BACKUP_FORMAT, describeItem, liveRecord, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
 
 const session = (date: string, items: Session['items'] = {}): Session => ({ id: date, date, items });
 const prog = (sessions: Session[], base: Progress['base'] = {}): Progress => ({ sessions, base });
@@ -41,12 +41,12 @@ test('a starting stage is a floor, and logs can raise it', () => {
   assert.equal(stageOf(prog([session('2026-11-01', { armbar: { kind: 'hit', hits: 1 } })], { armbar: 2 }), 'armbar'), 3);
 });
 
-test('logging never downgrades a move within a session', () => {
+test('practice never downgrades a move within a session; each landed tap counts', () => {
   let s = session('2026-11-01');
-  s = addItem(s, 'armbar', 'hit');
+  s = addItem(s, 'armbar', 'landed');
   s = addItem(s, 'armbar', 'drilled');
-  s = addItem(s, 'armbar', 'hit');
-  assert.deepEqual(s.items.armbar, { kind: 'hit', hits: 1 });
+  s = addItem(s, 'armbar', 'landed');
+  assert.deepEqual(s.items.armbar, { kind: 'hit', hits: 2 });
   s = addItem(s, 'triangle', 'seen');
   s = addItem(s, 'triangle', 'drilled');
   assert.deepEqual(s.items.triangle, { kind: 'drilled', hits: 0 });
@@ -86,7 +86,7 @@ test('old entries without a position, and starting stages, count for every posit
 
 test('entries are kept per position and removed per move', () => {
   let s = session('2026-11-01');
-  s = addItem(s, 'armbar', 'hit', 'closed');
+  s = addItem(s, 'armbar', 'landed', 'closed');
   s = addItem(s, 'armbar', 'drilled', 'mount');
   s = addItem(s, 'armbar', 'seen', 'closed');
   s = addItem(s, 'kimura', 'drilled', 'side');
@@ -132,4 +132,34 @@ test('parseBackup rejects other files and drops bad entries', () => {
   assert.equal(p.sessions.length, 1);
   assert.deepEqual(p.sessions[0].items, { armbar: { kind: 'hit', hits: 1 } });
   assert.deepEqual(p.base, { kimura: 2 });
+});
+
+test('missed, stopped and caught build the live record but never the stage', () => {
+  let s = session('2026-11-01');
+  s = addItem(s, 'triangle', 'caught', 'closed');
+  s = addItem(s, 'triangle', 'caught', 'closed');
+  s = addItem(s, 'triangle', 'stopped', 'closed');
+  s = addItem(s, 'armbar', 'missed', 'mount');
+  const p = prog([s]);
+  assert.equal(stageOf(p, 'triangle'), 0, 'getting caught does not make it Seen');
+  assert.equal(stageOf(p, 'armbar'), 0, 'a miss does not either');
+  assert.deepEqual(s.items['triangle@closed'], { kind: null, hits: 0, stopped: 1, caught: 2 });
+  assert.equal(describeItem(s.items['triangle@closed']), 'Stopped · Caught ×2');
+  s = addItem(s, 'triangle', 'drilled', 'closed');
+  assert.equal(s.items['triangle@closed'].kind, 'drilled', 'practice still upgrades a defense-only entry');
+  assert.equal(s.items['triangle@closed'].caught, 2);
+});
+
+test('liveRecord adds up by move and position; old hits count as one landed', () => {
+  const p = prog([
+    session('2026-11-01', { 'armbar@closed': { kind: 'hit', hits: 1, missed: 2 }, 'armbar@mount': { kind: null, hits: 0, caught: 1 } }),
+    session('2026-11-02', { armbar: { kind: 'hit', hits: 1 } }),
+  ]);
+  assert.deepEqual(liveRecord(p, 'armbar'), { landed: 2, missed: 2, stopped: 0, caught: 1 });
+  assert.deepEqual(liveRecord(p, 'armbar', 'mount'), { landed: 1, missed: 0, stopped: 0, caught: 1 });
+});
+
+test('a backup keeps the live record', () => {
+  const p: Progress = { sessions: [{ id: 'a', date: '2026-11-01', items: { 'triangle@closed': { kind: null, hits: 0, caught: 3 }, 'armbar@closed': { kind: 'hit', hits: 2, missed: 1 } } }], base: {} };
+  assert.deepEqual(parseBackup(toBackup(p)).sessions[0].items, p.sessions[0].items);
 });

@@ -3,10 +3,10 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { techniques } from '../data/catalog';
 import { colors } from '../theme';
 import * as db from './db';
-import { addItem, localDate, removeMove, stageOf, type Kind, type Progress, type Session, type Stage } from './progress';
+import { addItem, localDate, removeMove, stageOf, type LogKind, type Progress, type Session, type Stage } from './progress';
 
 /** One logged move. `pos` is the position it started from. */
-export interface LogEntry { moveId: string; kind: Kind; pos?: string | null }
+export interface LogEntry { moveId: string; kind: LogKind; pos?: string | null }
 
 interface Store {
   progress: Progress;

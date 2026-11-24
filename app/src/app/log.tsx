@@ -5,11 +5,16 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SectionLabel, TypeIcon } from '../components/ui';
 import { nameOf, techniqueById, techniques, TYPES } from '../data/catalog';
-import { KIND_LABEL, lastPosition, localDate, movesIn, STAGES, type Kind } from '../lib/progress';
+import { KIND_LABEL, KIND_LONG, lastPosition, localDate, movesIn, STAGES, type LogKind } from '../lib/progress';
 import { useProgress, type LogEntry } from '../lib/store';
 import { colors, radius, space } from '../theme';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
+const KIND_GROUPS: { label: string; kinds: LogKind[] }[] = [
+  { label: 'Practice', kinds: ['seen', 'drilled'] },
+  { label: 'Attacked', kinds: ['landed', 'missed'] },
+  { label: 'Defended', kinds: ['stopped', 'caught'] },
+];
 
 /** A picked row. The same move can be added again from another position. */
 type Row = LogEntry & { uid: number };
@@ -134,13 +139,18 @@ export default function LogScreen() {
               <Pressable onPress={() => remove(e.uid)} hitSlop={12} accessibilityLabel={`Remove ${nameOf(e.moveId)}`}><Text style={styles.x}>✕</Text></Pressable>
             </View>
             <View style={styles.ctrl}>
-              <View style={styles.seg}>
-                {(['seen', 'drilled', 'hit'] as Kind[]).map(k => (
-                  <Pressable key={k} onPress={() => update(e.uid, { kind: k })} style={[styles.segBtn, e.kind === k && styles.segOn]} accessibilityRole="radio" accessibilityState={{ selected: e.kind === k }}>
-                    <Text style={[styles.segText, e.kind === k && { color: colors.bg }]}>{KIND_LABEL[k]}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              {KIND_GROUPS.map(g => (
+                <View key={g.label} style={styles.group}>
+                  <Text style={styles.groupLabel}>{g.label}</Text>
+                  <View style={styles.seg}>
+                    {g.kinds.map(k => (
+                      <Pressable key={k} onPress={() => update(e.uid, { kind: k })} style={[styles.segBtn, e.kind === k && styles.segOn]} accessibilityRole="radio" accessibilityLabel={KIND_LONG[k]} accessibilityState={{ selected: e.kind === k }}>
+                        <Text style={[styles.segText, e.kind === k && { color: colors.bg }]}>{KIND_LABEL[k]}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
             </View>
             <Text style={[styles.fromLabel, !e.pos && { color: colors.brass }]}>{e.pos ? 'From' : 'From where?'}</Text>
             <View style={styles.posRow} accessibilityRole="radiogroup" accessibilityLabel={`Where ${nameOf(e.moveId)} started from`}>
@@ -189,9 +199,11 @@ const styles = StyleSheet.create({
   pickedHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   pickedName: { flex: 1, color: colors.ink, fontSize: 16, fontWeight: '700' },
   x: { color: colors.muted, fontSize: 16 },
-  ctrl: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm },
+  ctrl: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: space.sm },
+  group: { gap: 4 },
+  groupLabel: { color: colors.muted, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
   seg: { flexDirection: 'row', borderRadius: radius.sm + 2, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
-  segBtn: { minHeight: 40, paddingHorizontal: 12, justifyContent: 'center' },
+  segBtn: { minHeight: 40, paddingHorizontal: 11, justifyContent: 'center' },
   segOn: { backgroundColor: colors.brass },
   segText: { color: colors.muted, fontSize: 13.5, fontWeight: '700' },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.panel },

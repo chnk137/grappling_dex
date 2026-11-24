@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Bar, Chips, Pips, SectionLabel, TypeIcon } from '../../components/ui';
 import {
-  combos, entryNo, MAX_COMBOS, MAX_FROM, positionActive, positionById, positionLinks, relatedMoves, scorecard,
-  techniqueById, techniques, TIERS, TYPES, type MoveType, type Technique,
+  attackSide, combos, entryNo, hasSides, mainSide, positionActive, positionById, positionLinks, positionRecord, relatedMoves, scorecard,
+  sideLabel, techniqueById, techniques, TIERS, TYPES, type MoveType, type Side, type Technique,
 } from '../../data/catalog';
-import { KIND_LABEL, lastPosition, localDate, nextStep, posStats, RULES, splitKey, stats, STAGES, derivedStage, type Kind, type Stage } from '../../lib/progress';
+import {
+  describeItem, KIND_LABEL, KIND_LONG, lastPosition, liveRecord, localDate, nextStep, posStats, RULES, splitKey, stats, STAGES, derivedStage,
+  type Live, type LogKind, type Stage,
+} from '../../lib/progress';
 import { SPRITES } from '../../data/sprites';
 import { useProgress } from '../../lib/store';
 import { colors, radius, space, typeColor } from '../../theme';
@@ -33,25 +36,31 @@ function MoveEntry({ t }: { t: Technique }) {
   const st = stats(progress, t.id);
   const todaySession = progress.sessions.find(x => x.date === localDate());
   const today = todaySession
-    ? Object.entries(todaySession.items).map(([k, it]) => ({ ...splitKey(k), kind: it.kind })).filter(x => x.moveId === t.id)
+    ? Object.entries(todaySession.items).map(([k, it]) => ({ ...splitKey(k), text: describeItem(it) })).filter(x => x.moveId === t.id)
     : [];
   const cmb = combos(t);
+  const rec = liveRecord(progress, t.id);
   // The sprite of the first starting position that has one (sprites are made per position).
   const spritePos = t.from.find(f => SPRITES[f] !== undefined);
   const last = lastPosition(progress, t.id);
   // Quick log asks where it started from, unless the move only has one position.
-  const [asking, setAsking] = useState<Kind | null>(null);
+  const [asking, setAsking] = useState<LogKind | null>(null);
 
-  const log = (kind: Kind, pos: string) => {
+  const log = (kind: LogKind, pos: string) => {
     setAsking(null);
     const ups = logMoves(localDate(), [{ moveId: t.id, kind, pos }]);
     if (ups.length) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
-  const quick = (kind: Kind) => {
+  const quick = (kind: LogKind) => {
     if (t.from.length === 1) log(kind, t.from[0]);
     else { setAsking(a => (a === kind ? null : kind)); Haptics.selectionAsync(); }
   };
+  const qbtn = (k: LogKind, label: string, fail = false) => (
+    <Pressable key={k} onPress={() => quick(k)} style={({ pressed }) => [styles.qbtn, fail && styles.qbtnFail, (pressed || asking === k) && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`Log ${KIND_LONG[k]} for today`} accessibilityState={{ expanded: asking === k }}>
+      <Text style={[styles.qtext, fail && styles.qtextFail]}>{label}</Text>
+    </Pressable>
+  );
   // Most recently used position first, so the usual one is the first chip.
   const fromOrder = last && t.from.includes(last) ? [last, ...t.from.filter(f => f !== last)] : t.from;
 
@@ -80,28 +89,43 @@ function MoveEntry({ t }: { t: Technique }) {
       <View style={styles.box}>
         <View style={styles.boxHead}><Text style={styles.stage}>{STAGES[s]}</Text><Pips stage={s} /></View>
         <Text style={styles.muted}>{nextStep(progress, t.id)}</Text>
+        <Text style={styles.groupLabel}>Practice</Text>
         <View style={styles.qlog}>
-          {(['seen', 'drilled', 'hit'] as Kind[]).map(k => (
-            <Pressable key={k} onPress={() => quick(k)} style={({ pressed }) => [styles.qbtn, (pressed || asking === k) && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`Log ${KIND_LABEL[k]} for today`} accessibilityState={{ expanded: asking === k }}>
-              <Text style={styles.qtext}>+ {KIND_LABEL[k]}</Text>
-            </Pressable>
-          ))}
+          {qbtn('seen', '+ Seen')}
+          {qbtn('drilled', '+ Drilled')}
+        </View>
+        <Text style={styles.groupLabel}>Live roll</Text>
+        <View style={styles.qlog}>
+          <Text style={styles.liveLabel}>Attacked</Text>
+          {qbtn('landed', '✓ Landed')}
+          {qbtn('missed', '✗ Missed', true)}
+        </View>
+        <View style={styles.qlog}>
+          <Text style={styles.liveLabel}>Defended</Text>
+          {qbtn('stopped', '✓ Stopped')}
+          {qbtn('caught', '✗ Caught', true)}
         </View>
         {asking && (
           <View style={styles.ask}>
             <Text style={styles.askLabel}>{`${KIND_LABEL[asking]} from where?`}</Text>
             <View style={styles.posRow}>
-              {fromOrder.map(f => (
-                <Pressable key={f} onPress={() => log(asking, f)} style={({ pressed }) => [styles.posChip, pressed && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`${KIND_LABEL[asking]} from ${positionById.get(f)!.name}`}>
-                  <Text style={styles.ink}>{positionById.get(f)!.name}</Text>
-                </Pressable>
-              ))}
+              {fromOrder.map(f => {
+                // Which side you were on: the attacker's side, or the other one when defending.
+                const a = attackSide(t, f);
+                const mine: Side | null = a && (asking === 'stopped' || asking === 'caught') ? (a === 'top' ? 'bottom' : 'top') : a;
+                return (
+                  <Pressable key={f} onPress={() => log(asking, f)} style={({ pressed }) => [styles.posChip, pressed && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`${KIND_LONG[asking]} from ${positionById.get(f)!.name}${mine ? `, you on ${sideLabel(f, mine).toLowerCase()}` : ''}`}>
+                    <Text style={styles.ink}>{positionById.get(f)!.name}</Text>
+                    {mine && <Text style={styles.chipSide}>{sideLabel(f, mine)}</Text>}
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         )}
         {today.length > 0 && (
           <View style={styles.todayRow}>
-            <Text style={[styles.ink, { flex: 1 }]}>Today: {today.map(x => `${KIND_LABEL[x.kind]}${x.pos ? ` from ${positionById.get(x.pos)?.name ?? x.pos}` : ''}`).join(' · ')}</Text>
+            <Text style={[styles.ink, { flex: 1 }]}>Today: {today.map(x => `${x.text}${x.pos ? ` from ${positionById.get(x.pos)?.name ?? x.pos}` : ''}`).join('; ')}</Text>
             <Pressable onPress={() => clearToday(t.id)} hitSlop={10}><Text style={styles.link}>Undo today</Text></Pressable>
           </View>
         )}
@@ -125,12 +149,8 @@ function MoveEntry({ t }: { t: Technique }) {
         </View>
       </View>
 
-      <SectionLabel>Stats</SectionLabel>
-      <View style={styles.bars}>
-        <Bar label="Positions" value={t.from.length} max={MAX_FROM} />
-        <Bar label="Combos" value={cmb.length} max={MAX_COMBOS} />
-        <Bar label="Days hit live" value={st.hitDays} max={RULES.masterDays} right={`${Math.min(st.hitDays, RULES.masterDays)}/${RULES.masterDays}`} />
-      </View>
+      <SectionLabel>Live record</SectionLabel>
+      <LiveBars rec={rec} empty="No live rolls logged yet. Use Attacked or Defended above after you roll." />
 
       <SectionLabel>{`By position · works from (${t.from.length})`}</SectionLabel>
       <View style={styles.byPos}>
@@ -155,13 +175,34 @@ function MoveEntry({ t }: { t: Technique }) {
   );
 }
 
+/** Offense = landed of attempts; defense = stopped of times they tried it. */
+function LiveBars({ rec, empty }: { rec: Live; empty: string }) {
+  const att = rec.landed + rec.missed;
+  const def = rec.stopped + rec.caught;
+  if (!att && !def) return <Text style={styles.muted}>{empty}</Text>;
+  return (
+    <View style={styles.bars}>
+      <Bar label="Offense" value={rec.landed} max={att} right={`${rec.landed}/${att}`} />
+      <Text style={styles.barNote}>{att ? `Landed ${rec.landed} · Missed ${rec.missed}` : 'No attacks logged'}</Text>
+      <Bar label="Defense" value={rec.stopped} max={def} right={`${rec.stopped}/${def}`} />
+      <Text style={styles.barNote}>{def ? `Stopped ${rec.stopped} · Caught ${rec.caught}` : 'No defenses logged'}</Text>
+    </View>
+  );
+}
+
 function PositionEntry({ id }: { id: string }) {
   const { progress } = useProgress();
   const p = positionById.get(id)!;
-  const rows = scorecard(progress, id);
+  const sided = hasSides(id);
+  const [side, setSide] = useState<Side>(() => mainSide(id));
+  const cur = sided ? side : undefined;
+  const rows = scorecard(progress, id, cur);
+  const waysIn = sided ? scorecard(progress, id).find(r => r.label === 'Ways in') : undefined;
+  const rec = positionRecord(progress, id, cur ?? null);
   const active = positionActive(progress, id);
   const arrive = techniques.filter(t => t.to === id).map(t => t.id);
   const neighbours = positionLinks.filter(l => l.includes(id)).map(l => (l[0] === id ? l[1] : l[0]));
+  const onSide = (t: Technique) => !cur || attackSide(t, id) === cur;
 
   return (
     <>
@@ -175,14 +216,27 @@ function PositionEntry({ id }: { id: string }) {
         </View>
       )}
       <Text style={styles.h1}>{p.name}</Text>
+      {sided && (
+        <View style={styles.tabs} accessibilityRole="tablist">
+          {(['bottom', 'top'] as Side[]).map(sd => (
+            <Pressable key={sd} onPress={() => setSide(sd)} style={[styles.tab, side === sd && styles.tabOn]} accessibilityRole="tab" accessibilityState={{ selected: side === sd }}>
+              <Text style={[styles.tabText, side === sd && { color: colors.bg }]}>{sideLabel(id, sd)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View style={styles.box}>
-        <View style={styles.boxHead}><Text style={styles.stage}>Scorecard</Text><Text style={styles.small}>moves at Hit or better</Text></View>
+        <View style={styles.boxHead}><Text style={styles.stage}>{cur ? `${sideLabel(id, cur)} scorecard` : 'Scorecard'}</Text><Text style={styles.small}>moves at Hit or better</Text></View>
         {rows.map(r => <Bar key={r.label} label={r.label} value={r.have} max={r.total} right={`${r.have}/${r.total}`} warn={active && !r.have && r.label !== 'Ways in'} />)}
+        {!rows.length && <Text style={styles.muted}>No moves from this side in the dex yet. Defenses still count below.</Text>}
         {!active && <Text style={styles.muted}>Log any move from here to start tracking this position.</Text>}
+        <SectionLabel>Live record</SectionLabel>
+        <LiveBars rec={rec} empty={cur ? `Nothing logged from the ${sideLabel(id, cur).toLowerCase()} side yet.` : 'No live rolls logged here yet.'} />
+        {waysIn && <><SectionLabel>Getting here</SectionLabel><Bar label="Ways in" value={waysIn.have} max={waysIn.total} right={`${waysIn.have}/${waysIn.total}`} /></>}
       </View>
       {(Object.keys(TYPES) as MoveType[]).map(k => {
-        const ids = techniques.filter(t => t.type === k && t.from.includes(id)).map(t => t.id);
-        return ids.length ? <View key={k} style={{ gap: space.sm }}><SectionLabel>{`${TYPES[k].plural} from here (${ids.length})`}</SectionLabel><Chips ids={ids} at={id} /></View> : null;
+        const ids = techniques.filter(t => t.type === k && t.from.includes(id) && onSide(t)).map(t => t.id);
+        return ids.length ? <View key={k} style={{ gap: space.sm }}><SectionLabel>{`${TYPES[k].plural} from here${cur ? ` · ${sideLabel(id, cur)}` : ''} (${ids.length})`}</SectionLabel><Chips ids={ids} at={id} /></View> : null;
       })}
       {arrive.length > 0 && <><SectionLabel>{`Ways to get here (${arrive.length})`}</SectionLabel><Chips ids={arrive} /></>}
       {neighbours.length > 0 && <><SectionLabel>Connected positions</SectionLabel><Chips ids={neighbours} /></>}
@@ -195,7 +249,7 @@ const styles = StyleSheet.create({
   ask: { gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.brass, backgroundColor: colors.brassSoft },
   askLabel: { color: colors.brass, fontSize: 12, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
   posRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  posChip: { minHeight: 38, paddingHorizontal: 12, justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg },
+  posChip: { minHeight: 38, paddingHorizontal: 12, paddingVertical: 4, justifyContent: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg },
   byPos: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
   posLine: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 46, paddingHorizontal: space.md, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.bg2 },
   posStat: { color: colors.muted, fontSize: 13 },
@@ -217,13 +271,23 @@ const styles = StyleSheet.create({
   h1: { color: colors.ink, fontSize: 26, fontWeight: '700' },
   note: { color: colors.ink, fontSize: 15, lineHeight: 22 },
   box: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg2, padding: space.md, gap: space.sm },
-  boxHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  boxHead: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', columnGap: space.sm },
   stage: { color: colors.brass, fontSize: 18, fontWeight: '800' },
   small: { color: colors.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 },
   muted: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   ink: { color: colors.ink, fontSize: 14 },
   link: { color: colors.muted, fontSize: 14, textDecorationLine: 'underline' },
-  qlog: { flexDirection: 'row', gap: 6 },
+  qlog: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  groupLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: 2 },
+  liveLabel: { width: 74, color: colors.ink, fontSize: 13, fontWeight: '600' },
+  qbtnFail: { borderColor: colors.line },
+  qtextFail: { color: colors.ink },
+  chipSide: { color: colors.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6 },
+  barNote: { color: colors.muted, fontSize: 12, marginLeft: 94, marginTop: -6 },
+  tabs: { flexDirection: 'row', borderRadius: radius.sm + 2, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
+  tab: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
+  tabOn: { backgroundColor: colors.brass },
+  tabText: { color: colors.ink, fontSize: 14, fontWeight: '700' },
   qbtn: { flex: 1, minHeight: 46, borderRadius: radius.sm + 2, borderWidth: 1, borderColor: colors.brass, alignItems: 'center', justifyContent: 'center' },
   qtext: { color: colors.brass, fontSize: 14, fontWeight: '700' },
   todayRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

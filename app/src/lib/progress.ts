@@ -1,11 +1,23 @@
 // Progress rules for the Grappling Dex. Pure functions with no React Native
 // imports, so they run under `node --test` and match the web version exactly.
 
+/** What a day's entry counts as for stages. `null` = only defense was logged. */
 export type Kind = 'seen' | 'drilled' | 'hit';
+/** What you tap when logging. Landed = attacked and hit it (the old "Hit live"). */
+export type LogKind = 'seen' | 'drilled' | 'landed' | 'missed' | 'stopped' | 'caught';
+export type LiveKind = 'landed' | 'missed' | 'stopped' | 'caught';
 export type Stage = 0 | 1 | 2 | 3 | 4;
 
-/** `hits` is kept for older saved data and backups; stages no longer use it. */
-export interface SessionItem { kind: Kind; hits: number }
+/**
+ * One move from one position on one day. `kind` drives stages; the counts are
+ * the live record. `hits` = times landed (older saves have at most 1).
+ */
+export interface SessionItem { kind: Kind | null; hits: number; missed?: number; stopped?: number; caught?: number }
+
+/** A live record: attacks landed or missed, and defenses that stopped it or got caught. */
+export interface Live { landed: number; missed: number; stopped: number; caught: number }
+export const emptyLive = (): Live => ({ landed: 0, missed: 0, stopped: 0, caught: 0 });
+export const liveOf = (it: SessionItem): Live => ({ landed: it.hits ?? 0, missed: it.missed ?? 0, stopped: it.stopped ?? 0, caught: it.caught ?? 0 });
 /**
  * `items` is keyed by `moveId@positionId` (where the move started from).
  * Keys with no `@` come from before positions were logged: they credit every
@@ -27,7 +39,12 @@ export const movesIn = (s: Session): string[] => [...new Set(Object.keys(s.items
 export interface Progress { sessions: Session[]; base: Record<string, Stage> }
 
 export const STAGES = ['Unseen', 'Seen', 'Drilled', 'Hit', 'Mastered'] as const;
-export const KIND_LABEL: Record<Kind, string> = { seen: 'Seen', drilled: 'Drilled', hit: 'Hit live' };
+export const KIND_LABEL: Record<LogKind, string> = { seen: 'Seen', drilled: 'Drilled', landed: 'Landed', missed: 'Missed', stopped: 'Stopped', caught: 'Caught' };
+/** Longer labels for screen readers and confirmations. */
+export const KIND_LONG: Record<LogKind, string> = {
+  seen: 'Seen', drilled: 'Drilled', landed: 'Attacked and landed', missed: 'Attacked and missed', stopped: 'Defended and stopped', caught: 'Defended and got caught',
+};
+export const LIVE_KINDS: LiveKind[] = ['landed', 'missed', 'stopped', 'caught'];
 /** Mastered = hit live on this many different days (sessions). */
 export const RULES = { masterDays: 5 } as const;
 const KIND_RANK: Record<Kind, number> = { seen: 1, drilled: 2, hit: 3 };
@@ -42,6 +59,7 @@ function bestKind(session: Session, moveId: string, pos?: string): Kind | null {
     const k = splitKey(key);
     if (k.moveId !== moveId) continue;
     if (pos !== undefined && k.pos !== null && k.pos !== pos) continue;
+    if (!it.kind) continue;
     if (!best || KIND_RANK[it.kind] > KIND_RANK[best]) best = it.kind;
   }
   return best;
@@ -113,16 +131,56 @@ export function nextStep(p: Progress, moveId: string): string {
   return 'Mastered. It works on resisting partners.';
 }
 
+const STAGE_KIND: Partial<Record<LogKind, Kind>> = { seen: 'seen', drilled: 'drilled', landed: 'hit' };
+
 /**
  * Merge one logged move into a session (one session per training day), under
- * the position it started from. Logging never downgrades an entry within the
- * same session: Seen < Drilled < Hit live.
+ * the position it started from. Practice never downgrades within a day
+ * (Seen < Drilled < Landed); every live tap adds one to the record.
+ * Only Landed moves the stage: missing, stopping or getting caught never does.
  */
-export function addItem(session: Session, moveId: string, kind: Kind, pos?: string | null): Session {
+export function addItem(session: Session, moveId: string, kind: LogKind, pos?: string | null): Session {
   const key = itemKey(moveId, pos);
   const cur = session.items[key];
-  if (cur && KIND_RANK[cur.kind] >= KIND_RANK[kind]) return session;
-  return { ...session, items: { ...session.items, [key]: { kind, hits: kind === 'hit' ? 1 : 0 } } };
+  const stageKind = STAGE_KIND[kind] ?? null;
+  const live = cur ? liveOf(cur) : emptyLive();
+  let k = cur?.kind ?? null;
+  if (stageKind && (!k || KIND_RANK[stageKind] > KIND_RANK[k])) k = stageKind;
+  else if (kind === 'seen' || kind === 'drilled') return session; // already logged at that level or higher today
+  if (kind in live) live[kind as LiveKind]++;
+  return { ...session, items: { ...session.items, [key]: makeItem(k, live) } };
+}
+
+function makeItem(kind: Kind | null, l: Live): SessionItem {
+  const it: SessionItem = { kind, hits: l.landed };
+  if (l.missed) it.missed = l.missed;
+  if (l.stopped) it.stopped = l.stopped;
+  if (l.caught) it.caught = l.caught;
+  return it;
+}
+
+/** Adds up live records for a move (or every move), optionally from one position. Old entries with no position count everywhere. */
+export function liveRecord(p: Progress, moveId?: string, pos?: string): Live {
+  const out = emptyLive();
+  for (const s of p.sessions) {
+    for (const [key, it] of Object.entries(s.items)) {
+      const k = splitKey(key);
+      if (moveId !== undefined && k.moveId !== moveId) continue;
+      if (pos !== undefined && k.pos !== null && k.pos !== pos) continue;
+      const l = liveOf(it);
+      out.landed += l.landed; out.missed += l.missed; out.stopped += l.stopped; out.caught += l.caught;
+    }
+  }
+  return out;
+}
+
+/** What one day's entry says, e.g. "Drilled · Landed ×2 · Caught". */
+export function describeItem(it: SessionItem): string {
+  const parts: string[] = [];
+  if (it.kind === 'seen' || it.kind === 'drilled') parts.push(KIND_LABEL[it.kind]);
+  const l = liveOf(it);
+  for (const k of LIVE_KINDS) if (l[k]) parts.push(l[k] > 1 ? `${KIND_LABEL[k]} ×${l[k]}` : KIND_LABEL[k]);
+  return parts.join(' · ');
 }
 
 /** Removes every entry for `moveId` from a session. */
@@ -141,7 +199,7 @@ export const BACKUP_FORMAT = 'grappling-dex-backup';
 
 /** The JSON written to a backup file. */
 export function toBackup(p: Progress, exportedAt = new Date().toISOString()): string {
-  return JSON.stringify({ format: BACKUP_FORMAT, version: 1, exportedAt, sessions: p.sessions, base: p.base }, null, 1);
+  return JSON.stringify({ format: BACKUP_FORMAT, version: 2, exportedAt, sessions: p.sessions, base: p.base }, null, 1);
 }
 
 const KINDS: readonly string[] = ['seen', 'drilled', 'hit'];
@@ -156,7 +214,7 @@ export function parseBackup(text: string): Progress {
   try { raw = JSON.parse(text); } catch { throw new Error("That file isn't a Grappling Dex backup."); }
   const o = raw as { format?: unknown; version?: unknown; sessions?: unknown; base?: unknown };
   if (!o || typeof o !== 'object' || o.format !== BACKUP_FORMAT || !Array.isArray(o.sessions)) throw new Error("That file isn't a Grappling Dex backup.");
-  if (typeof o.version !== 'number' || o.version > 1) throw new Error('This backup is from a newer version of the app. Update the app, then try again.');
+  if (typeof o.version !== 'number' || o.version > 2) throw new Error('This backup is from a newer version of the app. Update the app, then try again.');
 
   const sessions: Session[] = [];
   const ids = new Set<string>();
@@ -165,9 +223,13 @@ export function parseBackup(text: string): Progress {
     if (!x || typeof x.id !== 'string' || !x.id || ids.has(x.id) || !isDate(x.date) || !x.items || typeof x.items !== 'object') continue;
     const items: Record<string, SessionItem> = {};
     for (const [moveId, it] of Object.entries(x.items as Record<string, Partial<SessionItem>>)) {
-      if (!it || typeof it.kind !== 'string' || !KINDS.includes(it.kind)) continue;
-      const hits = Number.isFinite(it.hits) ? Math.max(0, Math.floor(it.hits as number)) : 0;
-      items[moveId] = { kind: it.kind as Kind, hits: it.kind === 'hit' ? Math.max(1, hits) : 0 };
+      if (!it || typeof it !== 'object') continue;
+      const kind = typeof it.kind === 'string' && KINDS.includes(it.kind) ? (it.kind as Kind) : null;
+      const n = (v: unknown) => (Number.isFinite(v) ? Math.max(0, Math.floor(v as number)) : 0);
+      const live = { landed: n(it.hits), missed: n(it.missed), stopped: n(it.stopped), caught: n(it.caught) };
+      if (kind === 'hit') live.landed = Math.max(1, live.landed);
+      if (!kind && !live.landed && !live.missed && !live.stopped && !live.caught) continue;
+      items[moveId] = makeItem(kind, live);
     }
     if (!Object.keys(items).length) continue;
     ids.add(x.id);

@@ -1,5 +1,5 @@
 import raw from './catalog.json';
-import { posStage, stageOf, type Progress } from '../lib/progress';
+import { emptyLive, liveRecord, posStage, stageOf, type Live, type Progress } from '../lib/progress';
 
 export type MoveType = 'sub' | 'sweep' | 'pass' | 'move' | 'escape';
 export type Tier = 'stand' | 'guard' | 'leg' | 'pass' | 'pin' | 'dom';
@@ -47,20 +47,72 @@ export function relatedMoves(t: Technique): string[] {
     .filter(x => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 8).map(x => x.id);
 }
 
-export const MAX_FROM = Math.max(...techniques.map(t => t.from.length));
-export const MAX_COMBOS = Math.max(...techniques.map(t => combos(t).length));
+// ---- Top and bottom -----------------------------------------------------------
+
+export type Side = 'bottom' | 'top';
+/** Moves whose attacker isn't on the side the rule below gives. Keyed `moveId@positionId`. */
+const SIDE_OVERRIDES: Record<string, Side> = { 'buggy@side': 'bottom' };
+
+/** Positions with no top or bottom (both players standing). */
+export const hasSides = (posId: string) => positionById.get(posId)?.tier !== 'stand';
+
+/**
+ * Which side the attacker is on when this move starts from this position.
+ * Passes come from top; sweeps and escapes from bottom; submissions and
+ * transitions from the bottom of guards and leg entanglements, and from the top
+ * of pins. Defending credits the other side. `null` when the position has no sides.
+ */
+export function attackSide(t: Technique, posId: string): Side | null {
+  if (!hasSides(posId)) return null;
+  const o = SIDE_OVERRIDES[`${t.id}@${posId}`];
+  if (o) return o;
+  if (t.type === 'pass') return 'top';
+  if (t.type === 'sweep' || t.type === 'escape') return 'bottom';
+  const tier = positionById.get(posId)?.tier;
+  return tier === 'guard' || tier === 'leg' ? 'bottom' : 'top';
+}
+
+/** Leg entanglements have no real top: the sides are who attacks the legs. */
+export function sideLabel(posId: string, side: Side): string {
+  if (positionById.get(posId)?.tier === 'leg') return side === 'bottom' ? 'Attacking' : 'Defending';
+  return side === 'bottom' ? 'Bottom' : 'Top';
+}
+
+/** The side a position's page opens on: where most of its moves are attacked from. */
+export function mainSide(posId: string): Side {
+  const from = techniques.filter(t => t.from.includes(posId));
+  const top = from.filter(t => attackSide(t, posId) === 'top').length;
+  return top > from.length - top ? 'top' : 'bottom';
+}
+
+/**
+ * The live record on one side of a position: attacks you made from that side,
+ * and attacks from the other side that you defended. `side` null = the whole position.
+ */
+export function positionRecord(p: Progress, posId: string, side: Side | null): Live {
+  const out = emptyLive();
+  for (const t of techniques) {
+    if (!t.from.includes(posId)) continue;
+    const r = liveRecord(p, t.id, posId);
+    const a = attackSide(t, posId);
+    if (side === null || a === side) { out.landed += r.landed; out.missed += r.missed; }
+    if (side === null || a !== side) { out.stopped += r.stopped; out.caught += r.caught; }
+  }
+  return out;
+}
 
 export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in'; have: number; total: number }
 
 /**
  * How much of your game exists at a position, counted at Hit or better.
  * Moves from here only count when logged from here; ways in count from anywhere.
+ * With `side`, only moves attacked from that side (and no ways in).
  */
-export function scorecard(p: Progress, posId: string): ScoreRow[] {
+export function scorecard(p: Progress, posId: string, side?: Side): ScoreRow[] {
   const at = (list: Technique[]) => ({ have: list.filter(t => posStage(p, t.id, posId) >= 3).length, total: list.length });
   const into = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length });
   const rows: ScoreRow[] = [];
-  const from = techniques.filter(t => t.from.includes(posId));
+  const from = techniques.filter(t => t.from.includes(posId) && (!side || attackSide(t, posId) === side));
   const attacks = from.filter(t => t.type === 'sub' || t.type === 'sweep' || t.type === 'move');
   const passes = from.filter(t => t.type === 'pass');
   const escapes = from.filter(t => t.type === 'escape');
@@ -68,7 +120,7 @@ export function scorecard(p: Progress, posId: string): ScoreRow[] {
   if (attacks.length) rows.push({ label: 'Attacks', ...at(attacks) });
   if (passes.length) rows.push({ label: 'Passes', ...at(passes) });
   if (escapes.length) rows.push({ label: 'Escapes', ...at(escapes) });
-  if (waysIn.length) rows.push({ label: 'Ways in', ...into(waysIn) });
+  if (waysIn.length && !side) rows.push({ label: 'Ways in', ...into(waysIn) });
   return rows;
 }
 
