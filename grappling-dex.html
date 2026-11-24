@@ -408,7 +408,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 14</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 15</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -446,7 +446,6 @@ const HUBS = [
   ["fifty","50-50","leg",600,940],
   ["backside50","Back-side 50-50","leg",420,1030],
   ["truck","Truck","pin",130,960],
-  ["topHalf","Top half guard","pin",1340,1100],
   ["side","Side control","pin",980,1200],
   ["kesa","Kesa gatame","pin",1200,1320],
   ["kob","Knee on belly","pin",760,1190],
@@ -476,15 +475,15 @@ const HUB_LINKS = [
   ["butterfly","slx"],["butterfly","saddle"],["xguard","slx"],["slx","saddle"],["slx","outsideAshi"],
   ["slx","crossAshi"],["slx","fifty"],["saddle","crossAshi"],["saddle","fifty"],["fifty","backside50"],
   ["kguard","saddle"],["kguard","crossAshi"],["half","kneeShield"],["half","deepHalf"],["deepHalf","slx"],
-  ["half","slx"],["topHalf","side"],["topHalf","mount"],["side","kob"],["side","ns"],["side","kesa"],
+  ["half","slx"],["half","side"],["half","mount"],["side","kob"],["side","ns"],["side","kesa"],
   ["side","mount"],["kob","mount"],["side","crucifix"],["turtle","back"],["turtle","crucifix"],["turtle","truck"],
   ["truck","back"],["mount","sMount"],["mount","techMount"],["techMount","back"],["back","mount"],
   ["standing","shin"],["shin","dlr"],["shin","slx"],["shin","butterfly"],["shin","lasso"],["shin","kguard"],
   ["lasso","dlr"],["lasso","kguard"],["kguard","dlr"],
   ["deepHalf","waiterGuard"],["waiterGuard","slx"],["waiterGuard","saddle"],["half","octopus"],["octopus","back"],
   ["worm","dlr"],["worm","rdlr"],
-  ["hq","half"],["hq","kneeShield"],["hq","dlr"],["hq","topHalf"],["hq","side"],
-  ["bodyLockTop","butterfly"],["bodyLockTop","half"],["bodyLockTop","topHalf"],["bodyLockTop","mount"],
+  ["hq","half"],["hq","kneeShield"],["hq","dlr"],["hq","side"],
+  ["bodyLockTop","butterfly"],["bodyLockTop","half"],["bodyLockTop","mount"],
   ["legDragTop","dlr"],["legDragTop","rdlr"],["legDragTop","side"],["legDragTop","back"],
   ["crabRide","dlr"],["crabRide","back"],["crabRide","turtle"],
   ["standing","frontHeadlock"],["frontHeadlock","turtle"],["frontHeadlock","back"]
@@ -494,11 +493,11 @@ const HUB_LINKS = [
 const TECHS = [
   ["armbar","Armbar","sub",["closed","kneeShield","sMount","techMount","side","kob","ns","back","crucifix"],null,"Elbow lock. Also flying from standing. Chains with triangle and omoplata from guard."],
   ["triangle","Triangle choke","sub",["closed","kneeShield","spider","lasso","collar","sMount"],null,"One arm in, one out. From S-mount it is the mounted triangle."],
-  ["kimura","Kimura","sub",["closed","half","kneeShield","side","ns","topHalf"],null,"Shoulder lock. Pairs with the hip bump sweep from closed guard."],
+  ["kimura","Kimura","sub",["closed","half","kneeShield","side","ns"],null,"Shoulder lock. Pairs with the hip bump sweep from closed guard."],
   ["omoplata","Omoplata","sub",["closed","spider","lasso","collar"],null,"Shoulder lock with the legs. If they roll out, take top."],
   ["americana","Americana","sub",["closed","side","mount"],null,"Bent-arm shoulder lock, near arm pinned to the mat."],
   ["guillotine","Guillotine","sub",["closed","butterfly","turtle","standing","frontHeadlock"],null,"Front choke when the head drops. Arm-in version from butterfly."],
-  ["armTriangle","Arm triangle","sub",["mount","side","topHalf"],null,"Head-and-arm choke. Walk to the far side to finish."],
+  ["armTriangle","Arm triangle","sub",["mount","side","half"],null,"Head-and-arm choke. Walk to the far side to finish."],
   ["ezekiel","Ezekiel choke","sub",["closed","mount"],null,"Sleeve choke. Works from inside their closed guard too."],
   ["crossCollar","Cross collar choke","sub",["closed","mount","sMount"],null,"Deep first grip, then the second.",true],
   ["bowArrow","Bow and arrow choke","sub",["back","side"],null,"Collar grip plus pant grip, stretch them out.",true],
@@ -521,10 +520,10 @@ const TECHS = [
   ["straightAnkle","Straight ankle lock","sub",["slx","outsideAshi","crossAshi","fifty","deepHalf"],null,"Achilles lock. The most widely legal leg lock."],
   ["outsideHeel","Outside heel hook","sub",["slx","outsideAshi","saddle","fifty","backside50"],null,"Check your ruleset before using heel hooks."],
   ["insideHeel","Inside heel hook","sub",["saddle","crossAshi","fifty","kguard"],null,"Highest-percentage finish from the saddle. Check your ruleset."],
-  ["toeHold","Toe hold","sub",["slx","outsideAshi","saddle","crossAshi","fifty","backside50","topHalf"],null,"Figure-four on the foot."],
+  ["toeHold","Toe hold","sub",["slx","outsideAshi","saddle","crossAshi","fifty","backside50","half"],null,"Figure-four on the foot."],
   ["kneebar","Kneebar","sub",["slx","outsideAshi","saddle","crossAshi","fifty","backside50"],null,"Slide up the leg when they turn away or stand."],
-  ["estima","Estima lock","sub",["slx","deepHalf","topHalf"],null,"Foot lock with their foot pinned at your hip."],
-  ["calfSlicer","Calf slicer","sub",["saddle","truck","topHalf"],null,"Compression lock behind the knee."],
+  ["estima","Estima lock","sub",["slx","deepHalf","half"],null,"Foot lock with their foot pinned at your hip."],
+  ["calfSlicer","Calf slicer","sub",["saddle","truck","half"],null,"Compression lock behind the knee."],
 
   ["scissor","Scissor sweep","sweep",["closed"],"mount","Collar and sleeve grip, cut the legs."],
   ["hipBump","Hip bump sweep","sweep",["closed"],"mount","When they posture up. Chains to kimura and guillotine."],
@@ -555,9 +554,9 @@ const TECHS = [
   ["xPass","X-pass","pass",["butterfly"],"side","Push the knees, step around."],
   ["smash","Smash pass","pass",["butterfly","bodyLockTop"],"side","Fold the legs to one side."],
   ["stackPass","Stack pass","pass",["closed","spider","lasso"],"side","Also counters the triangle."],
-  ["floatPass","Float pass","pass",["topHalf"],"side","Flatten them and float your hips free."],
-  ["mountPass","Mount pass","pass",["topHalf"],"mount","Slide the knee through to mount."],
-  ["backstep","Backstep","pass",["topHalf","rdlr"],"saddle","Turn away into a leg entanglement or side control."],
+  ["floatPass","Float pass","pass",["half"],"side","Flatten them and float your hips free."],
+  ["mountPass","Mount pass","pass",["half"],"mount","Slide the knee through to mount."],
+  ["backstep","Backstep","pass",["half","rdlr"],"saddle","Turn away into a leg entanglement or side control."],
 
   ["armDrag","Arm drag","move",["closed","butterfly","standing"],"back","Drag the arm across and climb to the back."],
   ["berimbolo","Berimbolo","move",["dlr"],"back","Invert under them to take the back."],
@@ -624,6 +623,16 @@ const CHAINS = [
   ["japaneseNecktie","darce"], ["kimura","tarikoplata"], ["omoplata","baratoplata"], ["legWeave","kneeSlice"],
   ["waiterSlx","straightAnkle"], ["octopusBack","rnc"]
 ];
+// Where the attacker's side at a position differs from the usual rule (see attackSides),
+// or where a move works from both sides of the same position. { moveId: { positionId: [sides] } }
+const SIDES = {
+  kimura: { half: ["bottom", "top"] },
+  armTriangle: { half: ["top"] }, toeHold: { half: ["top"] }, estima: { half: ["top"] }, calfSlicer: { half: ["top"] },
+  buggy: { side: ["bottom"] }
+};
+// Positions folded into another one, so older logs move with them. Logs from Top half
+// guard now count for the top side of half guard.
+const MERGED = { topHalf: { into: "half", side: "top" } };
 // Positions with a sprite in sprites/<id>.png. Updated by `npm run sprites` (in app/).
 const SPRITES = new Set([]);
 // A position's own sprite, or for a move the sprite of the first position it starts from.
@@ -674,24 +683,32 @@ try {
 
 // Session items are keyed "moveId@positionId" (where the move started from).
 // Keys with no "@" come from before positions were logged and credit every position.
-const keyOf = (id, pos) => pos ? `${id}@${pos}` : id;
-const splitKey = k => { const i = k.indexOf("@"); return i < 0 ? { id: k, pos: null } : { id: k.slice(0, i), pos: k.slice(i + 1) }; };
+// A few moves work from both sides of one position (a kimura from half guard): their keys
+// add ":top" or ":bottom", the attacker's side. Keys without it are the move's usual side there.
+const keyOf = (id, pos, side) => pos ? `${id}@${pos}${side ? ":" + side : ""}` : id;
+const splitKey = k => {
+  const i = k.indexOf("@"); if (i < 0) return { id: k, pos: null, side: null };
+  const [pos, side] = k.slice(i + 1).split(":");
+  return { id: k.slice(0, i), pos, side: side || null };
+};
+// sf = { side, dflt }: only entries on that side (keys without a side count as dflt).
+const onSideF = (k, sf) => !sf || (k.side || sf.dflt) === sf.side;
 const movesIn = s => [...new Set(Object.keys(s.items).map(k => splitKey(k).id))];
 // Best kind logged for a move in one session: from `pos` only (plus entries with no position), or from anywhere.
-function bestKind(s, id, pos) {
+function bestKind(s, id, pos, sf) {
   let best = null;
   for (const [key, it] of Object.entries(s.items)) {
     const k = splitKey(key);
-    if (k.id !== id || (pos && k.pos && k.pos !== pos) || !it.k) continue;
+    if (k.id !== id || (pos && k.pos && k.pos !== pos) || !it.k || !onSideF(k, sf)) continue;
     if (!best || KRANK[it.k] > KRANK[best]) best = it.k;
   }
   return best;
 }
 // Counts training days (sessions) by the best thing logged for the move that day.
-function stats(id, pos) {
+function stats(id, pos, sf) {
   let seenS = 0, drillS = 0, hitS = 0, last = null;
   for (const s of data.sessions) {
-    const k = bestKind(s, id, pos); if (!k) continue;
+    const k = bestKind(s, id, pos, sf); if (!k) continue;
     seenS++; if (k !== "seen") drillS++;
     if (k === "hit") hitS++;
     if (!last || s.d > last) last = s.d;
@@ -699,7 +716,7 @@ function stats(id, pos) {
   return { seenS, drillS, hitS, last };
 }
 // A move's stage from one position, for scorecards and gaps. Starting stages count everywhere.
-const posStage = (id, pos) => Math.max(data.base[id] || 0, derived(stats(id, pos)));
+const posStage = (id, pos, sf) => Math.max(data.base[id] || 0, derived(stats(id, pos, sf)));
 function lastPos(id) {
   for (let i = data.sessions.length - 1; i >= 0; i--) {
     const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.id === id && k.pos);
@@ -730,10 +747,10 @@ const pips = s => `<span class="pips" aria-hidden="true">${[1, 2, 3, 4].map(i =>
 // Position scorecard: how much of your game exists here (counted at Hit or better).
 // Moves from here count only when logged from here; ways in count from anywhere.
 function scorecard(h, side) {
-  const at = list => ({ have: list.filter(t => posStage(t.id, h.id) >= 3).length, total: list.length });
+  const at = list => ({ have: list.filter(t => posStage(t.id, h.id, side && sideFilter(t, h.id, side)) >= 3).length, total: list.length });
   const into = list => ({ have: list.filter(t => stage(t.id) >= 3).length, total: list.length });
   const rows = [];
-  const from = TECHS.filter(t => t.from.includes(h.id) && (!side || attackSide(t, h.id) === side));
+  const from = TECHS.filter(t => t.from.includes(h.id) && (!side || attackSides(t, h.id).includes(side)));
   const attacks = from.filter(t => ["sub", "sweep", "move"].includes(t.type));
   const passes = from.filter(t => t.type === "pass");
   const escapes = from.filter(t => t.type === "escape");
@@ -748,29 +765,52 @@ function scorecard(h, side) {
 // Which side the attacker is on when a move starts from a position. Passes come from
 // top; sweeps and escapes from bottom; submissions and transitions from the bottom of
 // guards and leg entanglements and the top of pins. Defending credits the other side.
-const SIDE_OVERRIDES = { "buggy@side": "bottom" };
+// SIDES (with the data above) overrides this per move and position.
 const hasSides = posId => hubById.get(posId)?.tier !== "stand";
-function attackSide(t, posId) {
-  if (!hasSides(posId)) return null;
-  const o = SIDE_OVERRIDES[`${t.id}@${posId}`]; if (o) return o;
-  if (t.type === "pass") return "top";
-  if (t.type === "sweep" || t.type === "escape") return "bottom";
+function attackSides(t, posId) {
+  if (!hasSides(posId)) return [];
+  const o = SIDES[t.id]?.[posId]; if (o) return o;
+  if (t.type === "pass") return ["top"];
+  if (t.type === "sweep" || t.type === "escape") return ["bottom"];
   const tier = hubById.get(posId)?.tier;
-  return tier === "guard" || tier === "leg" ? "bottom" : "top";
+  return [tier === "guard" || tier === "leg" ? "bottom" : "top"];
+}
+function sideFilter(t, posId, side) { const ss = attackSides(t, posId); return ss.length > 1 ? { side, dflt: ss[0] } : undefined; }
+// Everywhere a move can be logged from: one option per position, or per side where it works from both.
+const logOptions = t => t.from.flatMap(pos => { const ss = attackSides(t, pos); return ss.length > 1 ? ss.map(side => ({ pos, side })) : [{ pos, side: null }]; });
+const optKey = o => `${o.pos}:${o.side || ""}`;
+// Moves logs from merged positions (MERGED) to where they belong now. Returns true if anything moved.
+function migrateData() {
+  let changed = false;
+  data.sessions.forEach(s => {
+    const items = {};
+    for (const [key, it] of Object.entries(s.items)) {
+      const k = splitKey(key), m = k.pos && MERGED[k.pos], t = nodeById.get(k.id);
+      const next = m && t ? keyOf(k.id, m.into, attackSides(t, m.into).length > 1 ? m.side : null) : key;
+      if (next !== key) changed = true;
+      if (!items[next]) { items[next] = it; continue; }
+      const a = items[next], ka = !a.k ? it.k : !it.k ? a.k : KRANK[a.k] >= KRANK[it.k] ? a.k : it.k;
+      const m2 = { n: (a.n || 0) + (it.n || 0), mi: (a.mi || 0) + (it.mi || 0), st: (a.st || 0) + (it.st || 0), ca: (a.ca || 0) + (it.ca || 0) };
+      items[next] = Object.fromEntries(Object.entries({ k: ka, ...m2 }).filter(([, v]) => v));
+    }
+    s.items = items;
+  });
+  return changed;
 }
 const flip = sd => sd === "top" ? "bottom" : "top";
 // Leg entanglements have no real top: the sides are who attacks the legs.
 const sideLabel = (posId, sd) => hubById.get(posId)?.tier === "leg" ? (sd === "bottom" ? "Attacking" : "Defending") : (sd === "bottom" ? "Bottom" : "Top");
 function mainSide(posId) {
-  const from = TECHS.filter(t => t.from.includes(posId)), top = from.filter(t => attackSide(t, posId) === "top").length;
-  return top > from.length - top ? "top" : "bottom";
+  if (["guard", "leg"].includes(hubById.get(posId)?.tier)) return "bottom"; // a guard opens on the guard player's side
+  const ss = TECHS.filter(t => t.from.includes(posId)).flatMap(t => attackSides(t, posId)), top = ss.filter(x => x === "top").length;
+  return top > ss.length - top ? "top" : "bottom";
 }
 // Live record for a move (or every move), optionally from one position. Old entries with no position count everywhere.
-function liveRecord(id, pos) {
+function liveRecord(id, pos, sf) {
   const out = emptyLive();
   for (const s of data.sessions) for (const [key, it] of Object.entries(s.items)) {
     const k = splitKey(key);
-    if ((id && k.id !== id) || (pos && k.pos && k.pos !== pos)) continue;
+    if ((id && k.id !== id) || (pos && k.pos && k.pos !== pos) || !onSideF(k, sf)) continue;
     const l = liveOf(it); for (const f in out) out[f] += l[f];
   }
   return out;
@@ -780,9 +820,12 @@ function positionRecord(posId, side) {
   const out = emptyLive();
   TECHS.forEach(t => {
     if (!t.from.includes(posId)) return;
-    const r = liveRecord(t.id, posId), a = attackSide(t, posId);
-    if (!side || a === side) { out.landed += r.landed; out.missed += r.missed; }
-    if (!side || a !== side) { out.stopped += r.stopped; out.caught += r.caught; }
+    const ss = attackSides(t, posId);
+    (ss.length ? ss : [null]).forEach(a => {
+      const r = liveRecord(t.id, posId, a && ss.length > 1 ? { side: a, dflt: ss[0] } : undefined);
+      if (!side || a === side) { out.landed += r.landed; out.missed += r.missed; }
+      if (!side || a !== side) { out.stopped += r.stopped; out.caught += r.caught; }
+    });
   });
   return out;
 }
@@ -825,18 +868,18 @@ function sessionFor(d, create) {
 }
 // One entry per move per position per day. Practice never downgrades it (Seen < Drilled < Landed);
 // every live tap adds one to the record. Only Landed moves the stage.
-function addItem(s, id, kind, pos) {
-  const key = keyOf(id, pos), cur = s.items[key] ? { ...s.items[key] } : {};
+function addItem(s, id, kind, pos, side) {
+  const key = keyOf(id, pos, side), cur = s.items[key] ? { ...s.items[key] } : {};
   const sk = STAGE_KIND[kind];
   if (sk && (!cur.k || KRANK[cur.k] < KRANK[sk])) cur.k = sk;
   else if (kind === "seen" || kind === "drilled") return;
   const f = LIVE_FIELD[kind]; if (f) cur[f] = (cur[f] || 0) + 1;
   s.items[key] = cur;
 }
-function quickLog(id, k, pos) {
+function quickLog(id, k, pos, side) {
   const before = stage(id);
   asking = null;
-  addItem(sessionFor(todayISO(), true), id, k, pos);
+  addItem(sessionFor(todayISO(), true), id, k, pos, side);
   commit();
   const after = stage(id);
   toast(after > before ? `${nodeById.get(id).name} reached ${STAGES[after]}` : `Logged ${KIND_LONG[k].toLowerCase()} for today`);
@@ -848,6 +891,7 @@ function clearToday(id) {
   commit();
 }
 function commit() { recompute(); refresh(); save(); }
+migrateData(); // older logs from merged positions (saved on the next change)
 
 // ---------- Board ----------
 TECHS.forEach((t, i) => {
@@ -1099,13 +1143,13 @@ function renderPanel() {
     const waysIn = cur ? scorecard(n).find(r => r.label === "Ways in") : null;
     const srow = r => `<div class="srow ${active && !r.have && r.label !== "Ways in" ? "gap" : ""}"><span>${r.label}</span><span class="sbar"><i style="width:${r.total ? 100 * r.have / r.total : 0}%"></i></span><span>${r.have}/${r.total}</span></div>`;
     const groups = Object.keys(TYPES).map(k => {
-      const ts = TECHS.filter(t => t.type === k && t.from.includes(n.id) && (!cur || attackSide(t, n.id) === cur));
+      const ts = TECHS.filter(t => t.type === k && t.from.includes(n.id) && (!cur || attackSides(t, n.id).includes(cur)));
       return ts.length ? `<h3>${TYPES[k].plural} from here${cur ? ` · ${sideLabel(n.id, cur)}` : ""} (${ts.length})</h3><div class="links">${ts.map(t => chip(t.id, n.id)).join("")}</div>` : "";
     }).join("");
     const arrive = TECHS.filter(t => t.to === n.id);
     const nb = HUB_LINKS.filter(l => l.includes(n.id)).map(l => l[0] === n.id ? l[1] : l[0]);
     panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span>Position · ${TIERS[n.tier]}</span></div>${spriteOf(n) ? `<div class="portrait has-sprite${active ? "" : " dim"}">${spriteImg(n.id)}</div>` : ""}<h2>${esc(n.name)}</h2>
-      ${sided ? `<div class="sidetabs" role="tablist">${["bottom", "top"].map(sd => `<button role="tab" data-side="${sd}" aria-selected="${cur === sd}">${sideLabel(n.id, sd)}</button>`).join("")}</div>` : ""}
+      ${sided ? `<div class="sidetabs" role="tablist">${["bottom", "top"].map(sd => `<button role="tab" data-tabside="${sd}" aria-selected="${cur === sd}">${sideLabel(n.id, sd)}</button>`).join("")}</div>` : ""}
       <div class="stagebox"><div class="stagehead"><b>${cur ? sideLabel(n.id, cur) + " scorecard" : "Scorecard"}</b><span class="status">moves at Hit or better</span></div>
       <div class="score">${rows.map(srow).join("")}</div>
       ${rows.length ? "" : `<p class="next">No moves from this side in the dex yet. Defenses still count below.</p>`}
@@ -1120,7 +1164,7 @@ function renderPanel() {
     const today = sessionFor(todayISO(), false);
     const ti = today ? Object.entries(today.items).map(([k, it]) => ({ ...splitKey(k), text: describeItem(it) })).filter(x => x.id === n.id) : [];
     const qb = (k, label, fail) => `<button data-k="${k}" class="${fail ? "fail" : ""}" aria-label="Log ${KIND_LONG[k].toLowerCase()} for today" aria-expanded="${asking === k}">${label}</button>`;
-    const lp = lastPos(n.id), order = lp && n.from.includes(lp) ? [lp, ...n.from.filter(f => f !== lp)] : n.from;
+    const lp = lastPos(n.id), opts = logOptions(n), order = lp ? [...opts.filter(o => o.pos === lp), ...opts.filter(o => o.pos !== lp)] : opts;
     panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span class="tag t-${n.type}">${TYPES[n.type].label}</span>${n.gi ? "<span>Gi only</span>" : ""}</div>
       ${spriteOf(n)
         ? `<div class="portrait has-sprite t-${n.type}${s ? "" : " dim"}">${spriteImg(spriteOf(n))}<svg class="badge" width="22" height="22" viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d3.symbol(TYPES[n.type].sym, 120)()}" fill="currentColor"/></svg><span class="from">From ${esc(hubById.get(spriteOf(n)).name)}${n.to ? ` → ${esc(hubById.get(n.to).name)}` : ""}</span></div>`
@@ -1134,11 +1178,11 @@ function renderPanel() {
         <span class="glabel">Live roll</span>
         <div class="qlog live"><span>Attacked</span>${qb("landed", "✓ Landed")}${qb("missed", "✗ Missed", true)}</div>
         <div class="qlog live"><span>Defended</span>${qb("stopped", "✓ Stopped")}${qb("caught", "✗ Caught", true)}</div>
-        ${asking ? `<div class="ask"><b>${KINDS[asking]} from where?</b><div class="links">${order.map(h => {
-          const a = attackSide(n, h), mine = a && (asking === "stopped" || asking === "caught") ? flip(a) : a;
-          return `<button data-pos="${h}" aria-label="${KIND_LONG[asking]} from ${esc(hubById.get(h).name)}${mine ? `, you on ${sideLabel(h, mine).toLowerCase()}` : ""}">${esc(hubById.get(h).name)}${mine ? `<small class="side">${sideLabel(h, mine)}</small>` : ""}</button>`;
+        ${asking ? `<div class="ask"><b>${KINDS[asking]} from where?</b><div class="links"> ${order.map(({ pos: h, side }) => {
+          const a = side || attackSides(n, h)[0] || null, mine = a && (asking === "stopped" || asking === "caught") ? flip(a) : a;
+          return `<button data-pos="${h}" data-side="${side || ""}" aria-label="${KIND_LONG[asking]} from ${esc(hubById.get(h).name)}${mine ? `, you on ${sideLabel(h, mine).toLowerCase()}` : ""}">${esc(hubById.get(h).name)}${mine ? `<small class="side">${sideLabel(h, mine)}</small>` : ""}</button>`;
         }).join("")}</div></div>` : ""}
-        ${ti.length ? `<div class="today"><span>Today: ${ti.map(x => `${x.text}${x.pos ? ` from ${esc(hubById.get(x.pos)?.name || x.pos)}` : ""}`).join("; ")}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
+        ${ti.length ? `<div class="today"><span>Today: ${ti.map(x => `${x.text}${x.pos ? ` from ${esc(hubById.get(x.pos)?.name || x.pos)}${x.side ? ` (${x.side})` : ""}` : ""}`).join("; ")}</span><button class="linkbtn" id="clearToday">Undo today</button></div>` : ""}
         <p class="next days" aria-label="Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days"><span class="dots" aria-hidden="true">${Array.from({ length: RULES.masterDays }, (_, i) => `<i class="${i < st.hitS ? "f" : ""}"></i>`).join("")}</span> Hit live on ${Math.min(st.hitS, RULES.masterDays)} of ${RULES.masterDays} days</p>
         <p class="next">${st.seenS ? `Logged in ${st.seenS} session${st.seenS > 1 ? "s" : ""} · last ${fmtDate(st.last)}` : "Not logged yet."}</p>
         <label class="basesel" for="base">Already know it?<select id="base">${STAGES.map((l, i) => `<option value="${i}"${(data.base[n.id] || 0) === i ? " selected" : ""}>${i ? "Start at " + l : "No starting stage"}</option>`).join("")}</select></label>
@@ -1154,14 +1198,15 @@ function renderPanel() {
       ${rel.length ? `<h3>Related moves</h3><div class="links">${rel.map(chip).join("")}</div>` : ""}`;
     // Quick log asks where it started from, unless the move has only one position.
     panel.querySelectorAll(".qlog [data-k]").forEach(b => b.onclick = () => {
-      if (n.from.length === 1) return quickLog(n.id, b.dataset.k, n.from[0]);
+      const os = logOptions(n);
+      if (os.length === 1) return quickLog(n.id, b.dataset.k, os[0].pos, os[0].side);
       asking = asking === b.dataset.k ? null : b.dataset.k; renderPanel();
     });
-    panel.querySelectorAll("[data-pos]").forEach(b => b.onclick = () => quickLog(n.id, asking, b.dataset.pos));
+    panel.querySelectorAll("[data-pos]").forEach(b => b.onclick = () => quickLog(n.id, asking, b.dataset.pos, b.dataset.side || null));
     const ct = panel.querySelector("#clearToday"); if (ct) ct.onclick = () => clearToday(n.id);
     panel.querySelector("#base").onchange = e => { const v = +e.target.value; if (v) data.base[n.id] = v; else delete data.base[n.id]; commit(); };
   }
-  panel.querySelectorAll("[data-side]").forEach(b => b.onclick = () => { hubSide = { id: n.id, side: b.dataset.side }; renderPanel(); });
+  panel.querySelectorAll("[data-tabside]").forEach(b => b.onclick = () => { hubSide = { id: n.id, side: b.dataset.tabside }; renderPanel(); });
   panel.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { select(b.dataset.go); if (view === "map" && !isPhone) focusOn(nodeById.get(b.dataset.go)); });
   panel.insertAdjacentHTML("afterbegin", `<div class="backbar"><button id="backBtn">‹ Back</button><span class="entry-no">${entryNo.get(n.id)}</span></div>`);
   panel.querySelector("#backBtn").onclick = () => select(null);
@@ -1207,12 +1252,13 @@ document.getElementById("find").addEventListener("change", e => {
 
 // ---------- Session log sheet ----------
 const sheet = document.getElementById("logSheet");
-// Picked rows: { uid, id, k, pos }. The same move can be added again from another position.
+// Picked rows: { uid, id, k, pos, side }. The same move can be added again from another position.
 // `flagged` is set when Save was tapped with a position missing, to highlight those moves.
 let draft = [], lastFocus = null, uidSeq = 1, flagged = false;
 function newRow(id, k = "drilled") {
-  const from = nodeById.get(id).from, lp = lastPos(id);
-  return { uid: uidSeq++, id, k, pos: from.length === 1 ? from[0] : lp && from.includes(lp) ? lp : null };
+  const opts = logOptions(nodeById.get(id)), lastOpts = opts.filter(o => o.pos === lastPos(id));
+  const o = opts.length === 1 ? opts[0] : lastOpts.length === 1 ? lastOpts[0] : { pos: null, side: null };
+  return { uid: uidSeq++, id, k, pos: o.pos, side: o.side };
 }
 function openLog() {
   lastFocus = document.activeElement;
@@ -1234,12 +1280,12 @@ function renderSheet() {
     ? `<div class="field">Recent<div class="links">${recentIds.map(id => `<button data-add="${id}">${icon(nodeById.get(id), 12)}${esc(nodeById.get(id).name)}</button>`).join("")}</div></div>` : "";
   const row = uid => draft.find(r => r.uid === +uid);
   document.getElementById("logPicked").innerHTML = draft.map(r => {
-    const n = nodeById.get(r.id), used = new Set(draft.filter(x => x.id === r.id && x.uid !== r.uid).map(x => x.pos));
-    const free = n.from.filter(h => !used.has(h));
+    const n = nodeById.get(r.id), used = new Set(draft.filter(x => x.id === r.id && x.uid !== r.uid).map(optKey));
+    const free = logOptions(n).filter(o => !used.has(optKey(o)));
     return `<div class="prow${flagged && !r.pos ? " need" : ""}" data-uid="${r.uid}">
       <span class="nm">${icon(n)}${esc(n.name)}</span><button class="x" data-rm="${r.uid}" aria-label="Remove ${esc(n.name)}">✕</button>
       <div class="ctrl">${KIND_GROUPS.map(([g, ks]) => `<div class="kgroup"><span class="glabel">${g}</span><span class="seg" role="group" aria-label="${g}">${ks.map(k => `<button data-set="${r.uid}" data-k="${k}" aria-label="${KIND_LONG[k]}" aria-pressed="${r.k === k}">${KINDS[k]}</button>`).join("")}</span></div>`).join("")}</div>
-      <div class="from"><span class="fromlbl${r.pos ? "" : " need"}">${r.pos ? "From" : "From where?"}</span><span class="posrow" role="group" aria-label="Where ${esc(n.name)} started from">${free.map(h => `<button data-row="${r.uid}" data-pos="${h}" aria-pressed="${r.pos === h}">${esc(hubById.get(h).name)}</button>`).join("")}</span>
+      <div class="from"><span class="fromlbl${r.pos ? "" : " need"}">${r.pos ? "From" : "From where?"}</span><span class="posrow" role="group" aria-label="Where ${esc(n.name)} started from">${free.map(o => `<button data-row="${r.uid}" data-pos="${o.pos}" data-side="${o.side || ""}" aria-pressed="${r.pos === o.pos && (r.side || null) === o.side}">${esc(hubById.get(o.pos).name)}${o.side ? ` · ${sideLabel(o.pos, o.side)}` : ""}</button>`).join("")}</span>
       ${free.length > 1 ? `<button class="linkbtn another" data-another="${r.uid}">+ Also from another position</button>` : ""}</div></div>`;
   }).join("");
   const missing = draft.filter(r => !r.pos);
@@ -1254,11 +1300,11 @@ function renderSheet() {
   sheet.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { draft.push(newRow(b.dataset.add)); document.getElementById("logSearch").value = ""; renderSheet(); document.getElementById("logSearch").focus(); });
   sheet.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { draft = draft.filter(r => r.uid !== +b.dataset.rm); renderSheet(); });
   sheet.querySelectorAll("[data-set]").forEach(b => b.onclick = () => { row(b.dataset.set).k = b.dataset.k; renderSheet(); });
-  sheet.querySelectorAll("[data-row]").forEach(b => b.onclick = () => { row(b.dataset.row).pos = b.dataset.pos; renderSheet(); });
+  sheet.querySelectorAll("[data-row]").forEach(b => b.onclick = () => { const r = row(b.dataset.row); r.pos = b.dataset.pos; r.side = b.dataset.side || null; renderSheet(); });
   sheet.querySelectorAll("[data-another]").forEach(b => b.onclick = () => {
-    const r = row(b.dataset.another), used = new Set(draft.filter(x => x.id === r.id).map(x => x.pos));
-    const free = nodeById.get(r.id).from.filter(h => !used.has(h));
-    draft.push({ uid: uidSeq++, id: r.id, k: r.k, pos: free.length === 1 ? free[0] : null }); renderSheet();
+    const r = row(b.dataset.another), used = new Set(draft.filter(x => x.id === r.id).map(optKey));
+    const free = logOptions(nodeById.get(r.id)).filter(o => !used.has(optKey(o)));
+    draft.push({ uid: uidSeq++, id: r.id, k: r.k, pos: free.length === 1 ? free[0].pos : null, side: free.length === 1 ? free[0].side : null }); renderSheet();
   });
 }
 document.getElementById("logSearch").addEventListener("input", renderSheet);
@@ -1287,7 +1333,7 @@ function saveSession() {
     return;
   }
   const s = sessionFor(d, true);
-  draft.forEach(r => addItem(s, r.id, r.k, r.pos));
+  draft.forEach(r => addItem(s, r.id, r.k, r.pos, r.side));
   commit(); closeLog();
   const ids = [...new Set(draft.map(r => r.id))], ups = ids.filter(id => stage(id) > before.get(id));
   toast(ups.length ? `Saved · ${ups.length} move${ups.length > 1 ? "s" : ""} levelled up` : `Saved · ${ids.length} move${ids.length > 1 ? "s" : ""} logged`);
@@ -1326,7 +1372,7 @@ async function flush() {
       const pending = snap.metadata && snap.metadata.hasPendingWrites;
       if (d && d.v === 2 && Array.isArray(d.sessions)) {
         // The account copy arrives read-only (frozen), so work on a deep copy we can change.
-        if (!pending) { const copy = JSON.parse(JSON.stringify(d)); data = { v: 2, sessions: copy.sessions, base: copy.base || {}, updatedAt: copy.updatedAt }; recompute(); refresh(); }
+        if (!pending) { const copy = JSON.parse(JSON.stringify(d)); data = { v: 2, sessions: copy.sessions, base: copy.base || {}, updatedAt: copy.updatedAt }; const moved = migrateData(); recompute(); refresh(); if (moved) flush(); }
       } else if (first) {
         if (d && Array.isArray(d.learned)) d.learned.forEach(x => { const n = nodeById.get(x); if (n && !n.hub && !data.base[x]) data.base[x] = 2; });
         if (data.sessions.length || Object.keys(data.base).length) { recompute(); refresh(); flush(); }

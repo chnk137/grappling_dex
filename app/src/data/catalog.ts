@@ -1,11 +1,13 @@
 import raw from './catalog.json';
-import { emptyLive, liveRecord, posStage, stageOf, type Live, type Progress } from '../lib/progress';
+import { emptyLive, itemKey, liveRecord, posStage, renameKeys, stageOf, type Live, type Progress, type SideFilter } from '../lib/progress';
 
 export type MoveType = 'sub' | 'sweep' | 'pass' | 'move' | 'escape';
 export type Tier = 'stand' | 'guard' | 'leg' | 'pass' | 'pin' | 'dom';
 
 export interface Position { id: string; name: string; tier: Tier; x: number; y: number }
-export interface Technique { id: string; name: string; type: MoveType; from: string[]; to: string | null; note: string; gi: boolean }
+export type Side = 'bottom' | 'top';
+/** `sides` lists the attacker's side at a position where it differs from the rule in attackSides. */
+export interface Technique { id: string; name: string; type: MoveType; from: string[]; to: string | null; note: string; gi: boolean; sides?: Record<string, Side[]> }
 
 export const TYPES: Record<MoveType, { label: string; plural: string }> = {
   sub: { label: 'Submission', plural: 'Submissions' },
@@ -49,27 +51,40 @@ export function relatedMoves(t: Technique): string[] {
 
 // ---- Top and bottom -----------------------------------------------------------
 
-export type Side = 'bottom' | 'top';
-/** Moves whose attacker isn't on the side the rule below gives. Keyed `moveId@positionId`. */
-const SIDE_OVERRIDES: Record<string, Side> = { 'buggy@side': 'bottom' };
-
 /** Positions with no top or bottom (both players standing). */
 export const hasSides = (posId: string) => positionById.get(posId)?.tier !== 'stand';
 
 /**
- * Which side the attacker is on when this move starts from this position.
+ * Which side(s) the attacker can be on when this move starts from this position.
  * Passes come from top; sweeps and escapes from bottom; submissions and
  * transitions from the bottom of guards and leg entanglements, and from the top
- * of pins. Defending credits the other side. `null` when the position has no sides.
+ * of pins. A move's `sides` overrides this (a kimura works from both sides of
+ * half guard). Defending credits the other side. Empty when the position has no sides.
  */
-export function attackSide(t: Technique, posId: string): Side | null {
-  if (!hasSides(posId)) return null;
-  const o = SIDE_OVERRIDES[`${t.id}@${posId}`];
+export function attackSides(t: Technique, posId: string): Side[] {
+  if (!hasSides(posId)) return [];
+  const o = t.sides?.[posId];
   if (o) return o;
-  if (t.type === 'pass') return 'top';
-  if (t.type === 'sweep' || t.type === 'escape') return 'bottom';
+  if (t.type === 'pass') return ['top'];
+  if (t.type === 'sweep' || t.type === 'escape') return ['bottom'];
   const tier = positionById.get(posId)?.tier;
-  return tier === 'guard' || tier === 'leg' ? 'bottom' : 'top';
+  return [tier === 'guard' || tier === 'leg' ? 'bottom' : 'top'];
+}
+export const flipSide = (s: Side): Side => (s === 'top' ? 'bottom' : 'top');
+
+/** Entries only carry a side in their key when the move works from both sides of that position. */
+export function sideFilter(t: Technique, posId: string, side: Side): SideFilter | undefined {
+  const sides = attackSides(t, posId);
+  return sides.length > 1 ? { side, dflt: sides[0] } : undefined;
+}
+
+/** Everywhere a move can be logged from: one option per position, or per side where it works from both. */
+export interface LogOption { pos: string; side: Side | null }
+export function logOptions(t: Technique): LogOption[] {
+  return t.from.flatMap<LogOption>(pos => {
+    const sides = attackSides(t, pos);
+    return sides.length > 1 ? sides.map(side => ({ pos, side })) : [{ pos, side: null }];
+  });
 }
 
 /** Leg entanglements have no real top: the sides are who attacks the legs. */
@@ -78,11 +93,13 @@ export function sideLabel(posId: string, side: Side): string {
   return side === 'bottom' ? 'Bottom' : 'Top';
 }
 
-/** The side a position's page opens on: where most of its moves are attacked from. */
+/** The side a position's page opens on: bottom for guards, otherwise where most of its moves are attacked from. */
 export function mainSide(posId: string): Side {
-  const from = techniques.filter(t => t.from.includes(posId));
-  const top = from.filter(t => attackSide(t, posId) === 'top').length;
-  return top > from.length - top ? 'top' : 'bottom';
+  const tier = positionById.get(posId)?.tier;
+  if (tier === 'guard' || tier === 'leg') return 'bottom'; // a guard opens on the guard player's side
+  const sides = techniques.filter(t => t.from.includes(posId)).flatMap(t => attackSides(t, posId));
+  const top = sides.filter(x => x === 'top').length;
+  return top > sides.length - top ? 'top' : 'bottom';
 }
 
 /**
@@ -93,10 +110,12 @@ export function positionRecord(p: Progress, posId: string, side: Side | null): L
   const out = emptyLive();
   for (const t of techniques) {
     if (!t.from.includes(posId)) continue;
-    const r = liveRecord(p, t.id, posId);
-    const a = attackSide(t, posId);
-    if (side === null || a === side) { out.landed += r.landed; out.missed += r.missed; }
-    if (side === null || a !== side) { out.stopped += r.stopped; out.caught += r.caught; }
+    const sides = attackSides(t, posId);
+    for (const a of sides.length ? sides : [null]) {
+      const r = liveRecord(p, t.id, posId, a && sides.length > 1 ? { side: a, dflt: sides[0] } : undefined);
+      if (side === null || a === side) { out.landed += r.landed; out.missed += r.missed; }
+      if (side === null || a !== side) { out.stopped += r.stopped; out.caught += r.caught; }
+    }
   }
   return out;
 }
@@ -109,10 +128,10 @@ export interface ScoreRow { label: 'Attacks' | 'Passes' | 'Escapes' | 'Ways in';
  * With `side`, only moves attacked from that side (and no ways in).
  */
 export function scorecard(p: Progress, posId: string, side?: Side): ScoreRow[] {
-  const at = (list: Technique[]) => ({ have: list.filter(t => posStage(p, t.id, posId) >= 3).length, total: list.length });
+  const at = (list: Technique[]) => ({ have: list.filter(t => posStage(p, t.id, posId, side && sideFilter(t, posId, side)) >= 3).length, total: list.length });
   const into = (list: Technique[]) => ({ have: list.filter(t => stageOf(p, t.id) >= 3).length, total: list.length });
   const rows: ScoreRow[] = [];
-  const from = techniques.filter(t => t.from.includes(posId) && (!side || attackSide(t, posId) === side));
+  const from = techniques.filter(t => t.from.includes(posId) && (!side || attackSides(t, posId).includes(side)));
   const attacks = from.filter(t => t.type === 'sub' || t.type === 'sweep' || t.type === 'move');
   const passes = from.filter(t => t.type === 'pass');
   const escapes = from.filter(t => t.type === 'escape');
@@ -154,4 +173,17 @@ export function gaps(p: Progress, limit = 4): Gap[] {
     }
   }
   return out.sort((a, b) => b.weight - a.weight).slice(0, limit);
+}
+
+/** Positions merged into others: older logs from them move over (e.g. Top half guard → half guard, top). */
+const merged = (raw as { merged?: Record<string, { into: string; side: Side }> }).merged ?? {};
+
+/** Moves logs from merged positions to where they belong now. Returns `p` itself when nothing changed. */
+export function migrateProgress(p: Progress): Progress {
+  return renameKeys(p, k => {
+    const m = k.pos ? merged[k.pos] : undefined;
+    const t = techniqueById.get(k.moveId);
+    if (!m || !t) return null;
+    return itemKey(k.moveId, m.into, attackSides(t, m.into).length > 1 ? m.side : null);
+  });
 }

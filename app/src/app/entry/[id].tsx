@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Bar, Chips, Pips, SectionLabel, TypeIcon } from '../../components/ui';
 import {
-  attackSide, combos, entryNo, hasSides, mainSide, positionActive, positionById, positionLinks, positionRecord, relatedMoves, scorecard,
+  attackSides, combos, flipSide, logOptions, entryNo, hasSides, mainSide, positionActive, positionById, positionLinks, positionRecord, relatedMoves, scorecard,
   sideLabel, techniqueById, techniques, TIERS, TYPES, type MoveType, type Side, type Technique,
 } from '../../data/catalog';
 import {
@@ -46,14 +46,14 @@ function MoveEntry({ t }: { t: Technique }) {
   // Quick log asks where it started from, unless the move only has one position.
   const [asking, setAsking] = useState<LogKind | null>(null);
 
-  const log = (kind: LogKind, pos: string) => {
+  const log = (kind: LogKind, pos: string, side: Side | null) => {
     setAsking(null);
-    const ups = logMoves(localDate(), [{ moveId: t.id, kind, pos }]);
+    const ups = logMoves(localDate(), [{ moveId: t.id, kind, pos, side }]);
     if (ups.length) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
   const quick = (kind: LogKind) => {
-    if (t.from.length === 1) log(kind, t.from[0]);
+    if (options.length === 1) log(kind, options[0].pos, options[0].side);
     else { setAsking(a => (a === kind ? null : kind)); Haptics.selectionAsync(); }
   };
   const qbtn = (k: LogKind, label: string, fail = false) => (
@@ -62,7 +62,8 @@ function MoveEntry({ t }: { t: Technique }) {
     </Pressable>
   );
   // Most recently used position first, so the usual one is the first chip.
-  const fromOrder = last && t.from.includes(last) ? [last, ...t.from.filter(f => f !== last)] : t.from;
+  const options = logOptions(t);
+  const ordered = last ? [...options.filter(o => o.pos === last), ...options.filter(o => o.pos !== last)] : options;
 
   return (
     <>
@@ -109,12 +110,12 @@ function MoveEntry({ t }: { t: Technique }) {
           <View style={styles.ask}>
             <Text style={styles.askLabel}>{`${KIND_LABEL[asking]} from where?`}</Text>
             <View style={styles.posRow}>
-              {fromOrder.map(f => {
+              {ordered.map(({ pos: f, side }) => {
                 // Which side you were on: the attacker's side, or the other one when defending.
-                const a = attackSide(t, f);
-                const mine: Side | null = a && (asking === 'stopped' || asking === 'caught') ? (a === 'top' ? 'bottom' : 'top') : a;
+                const a = side ?? attackSides(t, f)[0] ?? null;
+                const mine: Side | null = a && (asking === 'stopped' || asking === 'caught') ? flipSide(a) : a;
                 return (
-                  <Pressable key={f} onPress={() => log(asking, f)} style={({ pressed }) => [styles.posChip, pressed && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`${KIND_LONG[asking]} from ${positionById.get(f)!.name}${mine ? `, you on ${sideLabel(f, mine).toLowerCase()}` : ''}`}>
+                  <Pressable key={`${f}:${side}`} onPress={() => log(asking, f, side)} style={({ pressed }) => [styles.posChip, pressed && { backgroundColor: colors.brassSoft }]} accessibilityRole="button" accessibilityLabel={`${KIND_LONG[asking]} from ${positionById.get(f)!.name}${mine ? `, you on ${sideLabel(f, mine).toLowerCase()}` : ''}`}>
                     <Text style={styles.ink}>{positionById.get(f)!.name}</Text>
                     {mine && <Text style={styles.chipSide}>{sideLabel(f, mine)}</Text>}
                   </Pressable>
@@ -125,7 +126,7 @@ function MoveEntry({ t }: { t: Technique }) {
         )}
         {today.length > 0 && (
           <View style={styles.todayRow}>
-            <Text style={[styles.ink, { flex: 1 }]}>Today: {today.map(x => `${x.text}${x.pos ? ` from ${positionById.get(x.pos)?.name ?? x.pos}` : ''}`).join('; ')}</Text>
+            <Text style={[styles.ink, { flex: 1 }]}>Today: {today.map(x => `${x.text}${x.pos ? ` from ${positionById.get(x.pos)?.name ?? x.pos}${x.side ? ` (${x.side})` : ''}` : ''}`).join('; ')}</Text>
             <Pressable onPress={() => clearToday(t.id)} hitSlop={10}><Text style={styles.link}>Undo today</Text></Pressable>
           </View>
         )}
@@ -202,7 +203,7 @@ function PositionEntry({ id }: { id: string }) {
   const active = positionActive(progress, id);
   const arrive = techniques.filter(t => t.to === id).map(t => t.id);
   const neighbours = positionLinks.filter(l => l.includes(id)).map(l => (l[0] === id ? l[1] : l[0]));
-  const onSide = (t: Technique) => !cur || attackSide(t, id) === cur;
+  const onSide = (t: Technique) => !cur || attackSides(t, id).includes(cur);
 
   return (
     <>

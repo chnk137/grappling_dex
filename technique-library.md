@@ -517,8 +517,8 @@ From turtle or a rolled-over leg entanglement; you hold one leg behind them.
 | Standing / passing | Kneebar (rolling or stepping) | Sub | Off a leg drag or backstep |
 | Standing / passing | Straight ankle lock | Sub | Fall back into straight ashi |
 | Standing / passing | Toe hold | Sub |  |
-| Top half guard | Estima lock / toe hold | Sub | Opponent's foot near your hip |
-| Top half guard | Calf slicer | Sub |  |
+| Half guard (top) | Estima lock / toe hold | Sub | Opponent's foot near your hip |
+| Half guard (top) | Calf slicer | Sub |  |
 | Top of 50-50 / after backstep | Heel hook | Sub |  |
 
 ### Entries into leg entanglements
@@ -629,11 +629,11 @@ Every technique that appears in more than one position, with all the places it w
 | --- | --- | --- |
 | Armbar | Joint lock (elbow) | Closed guard, Knee shield, Mount (S-mount), Technical mount, Side control (far arm), Knee on belly (far side, spinning), North-south, Back, Crucifix, Standing (flying) |
 | Triangle | Choke | Closed guard, Knee shield, Spider, Lasso, Collar-sleeve, Rubber guard, Mount (mounted triangle), Standing (flying) |
-| Kimura | Joint lock (shoulder) | Closed guard, Half guard, Knee shield, Side control, North-south, Top half guard |
+| Kimura | Joint lock (shoulder) | Closed guard, Half guard, Knee shield, Side control, North-south, Half guard (top) |
 | Omoplata | Joint lock (shoulder) | Closed guard, Spider, Lasso, Collar-sleeve, Rubber guard |
 | Americana | Joint lock (shoulder) | Closed guard (when they post), Side control, Mount |
 | Guillotine | Choke | Closed guard, Butterfly, Front headlock (turtle, snap down), Passing against butterfly |
-| Arm triangle | Choke | Mount, Side control, Top half guard |
+| Arm triangle | Choke | Mount, Side control, Half guard (top) |
 | Ezekiel | Choke | Closed guard (bottom and top), Mount |
 | Cross collar choke | Choke (gi) | Closed guard, Mount, High mount |
 | Collar / lapel chokes | Choke (gi) | Back, Side control, Knee on belly |
@@ -646,17 +646,17 @@ Every technique that appears in more than one position, with all the places it w
 | Straight ankle lock | Leg lock | Straight ashi / single leg X, Outside ashi, Cross ashi, 50-50, Deep half, Closed guard top (after break), Passing (fall back) |
 | Outside heel hook | Leg lock | Straight ashi, Outside ashi, Saddle, 50-50, Back-side 50-50, Top after backstep |
 | Inside heel hook | Leg lock | Saddle, Cross ashi, 50-50, K-guard |
-| Toe hold | Leg lock | Straight ashi, Outside ashi, Saddle, Cross ashi, 50-50, Back-side 50-50, Passing, Top half guard |
+| Toe hold | Leg lock | Straight ashi, Outside ashi, Saddle, Cross ashi, 50-50, Back-side 50-50, Passing, Half guard (top) |
 | Kneebar | Leg lock | Straight ashi, Outside ashi, Saddle, Cross ashi, 50-50, Back-side 50-50, Passing (rolling or stepping) |
-| Estima lock | Leg lock | Straight ashi, Deep half, Top half guard |
-| Calf slicer | Leg lock | Saddle, Truck, Top half guard |
+| Estima lock | Leg lock | Straight ashi, Deep half, Half guard (top) |
+| Calf slicer | Leg lock | Saddle, Truck, Half guard (top) |
 
 ### Sweeps and transitions
 
 | Technique | Outcome | Works from |
 | --- | --- | --- |
 | Back take | Transition | Mount (gift wrap, technical mount), Half guard (dogfight), Closed guard and Butterfly (arm drag), De La Riva (berimbolo, kiss of the dragon), Reverse DLR, K-guard (matrix), Worm guard, Turtle, Side control (crucifix), North-south, Saddle, Outside ashi, Cross ashi, 50-50, Truck, Standing (arm drag), Passing (leg drag) |
-| To mount | Transition | Side control (step over), Knee on belly, Top half guard (mount pass), Back (when they escape to the hips), Scissor and flower sweeps |
+| To mount | Transition | Side control (step over), Knee on belly, Half guard, top (mount pass), Back (when they escape to the hips), Scissor and flower sweeps |
 | Technical stand-up | Sweep | X-guard, Single leg X, Straight ashi (kick-over) |
 | Knee lever | Sweep | Half guard, Reverse DLR |
 | Wrestle-up / single leg | Sweep | Half guard (dogfight), Seated guard, Knee shield (underhook) |
@@ -673,8 +673,8 @@ Added Nov 22, 2026, starting from a shin-to-shin → lasso K-guard → De La Riv
 | Waiter guard | Guard (bottom) | Deep half, Single leg X / straight ashi, Saddle (inside sankaku) |
 | Octopus guard | Guard (bottom) | Half guard, Back |
 | Worm guard | Guard (bottom) | De La Riva, Reverse DLR |
-| Headquarters (HQ) | Passing (top) | Half guard, Knee shield, De La Riva, Top half guard, Side control |
-| Body lock (passing) | Passing (top) | Butterfly, Half guard, Top half guard, Mount |
+| Headquarters (HQ) | Passing (top) | Half guard, Knee shield, De La Riva, Side control |
+| Body lock (passing) | Passing (top) | Butterfly, Half guard, Mount |
 | Leg drag (top) | Passing (top) | De La Riva, Reverse DLR, Side control, Back |
 | Crab ride | Dominant (top) | De La Riva, Back, Turtle |
 | Front headlock | Pin (top) | Standing, Turtle, Back |

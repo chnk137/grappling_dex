@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addItem, BACKUP_FORMAT, describeItem, liveRecord, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
+import { addItem, BACKUP_FORMAT, describeItem, liveRecord, renameKeys, splitKey, lastPosition, movesIn, nextStep, parseBackup, posStage, removeMove, stageOf, stats, toBackup, type Progress, type Session } from './progress.ts';
 
 const session = (date: string, items: Session['items'] = {}): Session => ({ id: date, date, items });
 const prog = (sessions: Session[], base: Progress['base'] = {}): Progress => ({ sessions, base });
@@ -162,4 +162,29 @@ test('liveRecord adds up by move and position; old hits count as one landed', ()
 test('a backup keeps the live record', () => {
   const p: Progress = { sessions: [{ id: 'a', date: '2026-11-01', items: { 'triangle@closed': { kind: null, hits: 0, caught: 3 }, 'armbar@closed': { kind: 'hit', hits: 2, missed: 1 } } }], base: {} };
   assert.deepEqual(parseBackup(toBackup(p)).sessions[0].items, p.sessions[0].items);
+});
+
+test('a move from both sides of a position keeps the sides apart', () => {
+  let s = session('2026-11-01');
+  s = addItem(s, 'kimura', 'landed', 'half');            // usual side (bottom): no suffix
+  s = addItem(s, 'kimura', 'drilled', 'half', 'top');
+  s = addItem(s, 'kimura', 'caught', 'half', 'top');
+  assert.deepEqual(Object.keys(s.items), ['kimura@half', 'kimura@half:top']);
+  assert.deepEqual(splitKey('kimura@half:top'), { moveId: 'kimura', pos: 'half', side: 'top' });
+  const p = prog([s]);
+  const bottom = { side: 'bottom', dflt: 'bottom' }, top = { side: 'top', dflt: 'bottom' };
+  assert.equal(posStage(p, 'kimura', 'half', bottom), 3);
+  assert.equal(posStage(p, 'kimura', 'half', top), 2);
+  assert.equal(posStage(p, 'kimura', 'half'), 3, 'the position as a whole takes the best side');
+  assert.deepEqual(liveRecord(p, 'kimura', 'half', top), { landed: 0, missed: 0, stopped: 0, caught: 1 });
+  assert.equal(lastPosition(p, 'kimura'), 'half');
+});
+
+test('renameKeys moves logs from a merged position and combines clashes', () => {
+  const p = prog([session('2026-11-01', {
+    'kimura@topHalf': { kind: 'hit', hits: 1 }, 'kimura@half:top': { kind: 'drilled', hits: 0, caught: 1 }, 'armbar@closed': { kind: 'seen', hits: 0 },
+  })]);
+  const moved = renameKeys(p, k => (k.pos === 'topHalf' ? `${k.moveId}@half:top` : null));
+  assert.deepEqual(moved.sessions[0].items, { 'kimura@half:top': { kind: 'hit', hits: 1, caught: 1 }, 'armbar@closed': { kind: 'seen', hits: 0 } });
+  assert.equal(renameKeys(moved, () => null), moved, 'unchanged progress is returned as-is');
 });

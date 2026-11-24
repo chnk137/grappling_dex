@@ -2,7 +2,7 @@
 
 One image per position. Make them in ChatGPT, save each with the file name shown, and put it in `sprites/originals/`. Then run `npm run sprites` in the `app` folder (or ask Claude to) and they show up in the web dex and the app.
 
-You don't need all 40. Start with the positions you train; the rest keep their current icon until they have a picture.
+You don't need all 39. Start with the positions you train; the rest keep their current icon until they have a picture.
 
 ## How to work in ChatGPT
 
@@ -31,7 +31,7 @@ Reply "Ready" and wait for the first position.
 
 ## Positions
 
-Player A (gold) is the person whose position it is: the guard player in guards, the attacker in leg entanglements, the top player in pins, passing and dominant positions.
+Player A (gold) is the person whose position it is: the guard player in guards, the attacker in leg entanglements, the top player in pins, passing and dominant positions. One sprite covers both the top and bottom side of a position.
 
 ### Standing and guards (gold on bottom)
 
@@ -142,10 +142,6 @@ Player A (gold) is the person whose position it is: the guard player in guards, 
 **legDragTop.png** · Leg drag (top)
 > Grey on his back, twisted to his side. Gold drags grey's legs across his own body so grey's knees point away; gold's hip and knee pin grey's legs to the mat on the far side while gold's chest moves up toward grey's hip.
 > Must show: grey's legs pushed across to one side, gold beside grey's hips pinning them.
-
-**topHalf.png** · Top half guard
-> Gold on top, chest to chest. Grey's legs trap one of gold's legs. Gold has a crossface (forearm across grey's face) and an underhook, his free leg posted.
-> Must show: one of gold's legs trapped by grey's legs, gold heavy on grey's chest.
 
 **side.png** · Side control
 > Grey flat on his back. Gold lies across grey perpendicular, chest on chest, knees on the mat next to grey's hips and head side, one arm under grey's head.

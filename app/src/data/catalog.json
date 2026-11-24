@@ -142,13 +142,6 @@
    "y": 960
   },
   {
-   "id": "topHalf",
-   "name": "Top half guard",
-   "tier": "pin",
-   "x": 1340,
-   "y": 1100
-  },
-  {
    "id": "side",
    "name": "Side control",
    "tier": "pin",
@@ -416,11 +409,11 @@
    "slx"
   ],
   [
-   "topHalf",
+   "half",
    "side"
   ],
   [
-   "topHalf",
+   "half",
    "mount"
   ],
   [
@@ -557,10 +550,6 @@
   ],
   [
    "hq",
-   "topHalf"
-  ],
-  [
-   "hq",
    "side"
   ],
   [
@@ -570,10 +559,6 @@
   [
    "bodyLockTop",
    "half"
-  ],
-  [
-   "bodyLockTop",
-   "topHalf"
   ],
   [
    "bodyLockTop",
@@ -665,12 +650,17 @@
     "half",
     "kneeShield",
     "side",
-    "ns",
-    "topHalf"
+    "ns"
    ],
    "to": null,
    "note": "Shoulder lock. Pairs with the hip bump sweep from closed guard.",
-   "gi": false
+   "gi": false,
+   "sides": {
+    "half": [
+     "bottom",
+     "top"
+    ]
+   }
   },
   {
    "id": "omoplata",
@@ -721,11 +711,16 @@
    "from": [
     "mount",
     "side",
-    "topHalf"
+    "half"
    ],
    "to": null,
    "note": "Head-and-arm choke. Walk to the far side to finish.",
-   "gi": false
+   "gi": false,
+   "sides": {
+    "half": [
+     "top"
+    ]
+   }
   },
   {
    "id": "ezekiel",
@@ -1001,11 +996,16 @@
     "crossAshi",
     "fifty",
     "backside50",
-    "topHalf"
+    "half"
    ],
    "to": null,
    "note": "Figure-four on the foot.",
-   "gi": false
+   "gi": false,
+   "sides": {
+    "half": [
+     "top"
+    ]
+   }
   },
   {
    "id": "kneebar",
@@ -1030,11 +1030,16 @@
    "from": [
     "slx",
     "deepHalf",
-    "topHalf"
+    "half"
    ],
    "to": null,
    "note": "Foot lock with their foot pinned at your hip.",
-   "gi": false
+   "gi": false,
+   "sides": {
+    "half": [
+     "top"
+    ]
+   }
   },
   {
    "id": "calfSlicer",
@@ -1043,11 +1048,16 @@
    "from": [
     "saddle",
     "truck",
-    "topHalf"
+    "half"
    ],
    "to": null,
    "note": "Compression lock behind the knee.",
-   "gi": false
+   "gi": false,
+   "sides": {
+    "half": [
+     "top"
+    ]
+   }
   },
   {
    "id": "scissor",
@@ -1384,7 +1394,7 @@
    "name": "Float pass",
    "type": "pass",
    "from": [
-    "topHalf"
+    "half"
    ],
    "to": "side",
    "note": "Flatten them and float your hips free.",
@@ -1395,7 +1405,7 @@
    "name": "Mount pass",
    "type": "pass",
    "from": [
-    "topHalf"
+    "half"
    ],
    "to": "mount",
    "note": "Slide the knee through to mount.",
@@ -1406,7 +1416,7 @@
    "name": "Backstep",
    "type": "pass",
    "from": [
-    "topHalf",
+    "half",
     "rdlr"
    ],
    "to": "saddle",
@@ -1774,7 +1784,12 @@
    ],
    "to": null,
    "note": "Choke from bottom side control: triangle your legs and lock hands around the head and arm.",
-   "gi": false
+   "gi": false,
+   "sides": {
+    "side": [
+     "bottom"
+    ]
+   }
   },
   {
    "id": "wristlock",
@@ -1928,6 +1943,12 @@
    "gi": true
   }
  ],
+ "merged": {
+  "topHalf": {
+   "into": "half",
+   "side": "top"
+  }
+ },
  "chains": [
   [
    "hipBump",

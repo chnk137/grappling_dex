@@ -27,12 +27,26 @@ export interface Session { id: string; date: string; items: Record<string, Sessi
 
 // ---- Entry keys -------------------------------------------------------------
 
-export const itemKey = (moveId: string, pos?: string | null): string => (pos ? `${moveId}@${pos}` : moveId);
+/**
+ * `moveId@positionId`, plus `:top` or `:bottom` for the few moves that can be
+ * attacked from either side of the same position (e.g. a kimura from half guard).
+ */
+export const itemKey = (moveId: string, pos?: string | null, side?: string | null): string =>
+  pos ? `${moveId}@${pos}${side ? `:${side}` : ''}` : moveId;
 
-export function splitKey(key: string): { moveId: string; pos: string | null } {
+export function splitKey(key: string): { moveId: string; pos: string | null; side: string | null } {
   const i = key.indexOf('@');
-  return i < 0 ? { moveId: key, pos: null } : { moveId: key.slice(0, i), pos: key.slice(i + 1) };
+  if (i < 0) return { moveId: key, pos: null, side: null };
+  const [pos, side] = key.slice(i + 1).split(':');
+  return { moveId: key.slice(0, i), pos, side: side ?? null };
 }
+
+/**
+ * Filters entries to one side of a position. `dflt` is the side entries with no
+ * `:side` in their key belong to (the move's usual attacking side there).
+ */
+export interface SideFilter { side: string; dflt: string }
+const onSide = (k: { side: string | null }, f?: SideFilter) => !f || (k.side ?? f.dflt) === f.side;
 
 /** Distinct move ids in a session, in the order they were logged. */
 export const movesIn = (s: Session): string[] => [...new Set(Object.keys(s.items).map(k => splitKey(k).moveId))];
@@ -53,22 +67,22 @@ const KIND_RANK: Record<Kind, number> = { seen: 1, drilled: 2, hit: 3 };
 export interface MoveStats { sessions: number; drillDays: number; hitDays: number; last: string | null }
 
 /** Best kind logged in one session for `moveId`, from `pos` only (plus old entries with no position), or from anywhere. */
-function bestKind(session: Session, moveId: string, pos?: string): Kind | null {
+function bestKind(session: Session, moveId: string, pos?: string, sf?: SideFilter): Kind | null {
   let best: Kind | null = null;
   for (const [key, it] of Object.entries(session.items)) {
     const k = splitKey(key);
     if (k.moveId !== moveId) continue;
     if (pos !== undefined && k.pos !== null && k.pos !== pos) continue;
-    if (!it.kind) continue;
+    if (!it.kind || !onSide(k, sf)) continue;
     if (!best || KIND_RANK[it.kind] > KIND_RANK[best]) best = it.kind;
   }
   return best;
 }
 
-function tally(p: Progress, moveId: string, pos?: string): MoveStats {
+function tally(p: Progress, moveId: string, pos?: string, sf?: SideFilter): MoveStats {
   const s: MoveStats = { sessions: 0, drillDays: 0, hitDays: 0, last: null };
   for (const session of p.sessions) {
-    const kind = bestKind(session, moveId, pos);
+    const kind = bestKind(session, moveId, pos, sf);
     if (!kind) continue;
     s.sessions++;
     if (kind !== 'seen') s.drillDays++;
@@ -82,7 +96,7 @@ function tally(p: Progress, moveId: string, pos?: string): MoveStats {
 export const stats = (p: Progress, moveId: string): MoveStats => tally(p, moveId);
 
 /** A move's totals from one position. Old entries with no position count for every position. */
-export const posStats = (p: Progress, moveId: string, pos: string): MoveStats => tally(p, moveId, pos);
+export const posStats = (p: Progress, moveId: string, pos: string, sf?: SideFilter): MoveStats => tally(p, moveId, pos, sf);
 
 /**
  * Each stage asks for one thing: Seen = logged once, Drilled = drilled once,
@@ -106,8 +120,8 @@ export function stageOf(p: Progress, moveId: string): Stage {
  * A move's stage from one position, for that position's scorecard and gaps.
  * Starting stages say nothing about where, so they count for every position.
  */
-export function posStage(p: Progress, moveId: string, pos: string): Stage {
-  return Math.max(p.base[moveId] ?? 0, derivedStage(posStats(p, moveId, pos))) as Stage;
+export function posStage(p: Progress, moveId: string, pos: string, sf?: SideFilter): Stage {
+  return Math.max(p.base[moveId] ?? 0, derivedStage(posStats(p, moveId, pos, sf))) as Stage;
 }
 
 /** The position this move was most recently logged from, if any. */
@@ -139,8 +153,8 @@ const STAGE_KIND: Partial<Record<LogKind, Kind>> = { seen: 'seen', drilled: 'dri
  * (Seen < Drilled < Landed); every live tap adds one to the record.
  * Only Landed moves the stage: missing, stopping or getting caught never does.
  */
-export function addItem(session: Session, moveId: string, kind: LogKind, pos?: string | null): Session {
-  const key = itemKey(moveId, pos);
+export function addItem(session: Session, moveId: string, kind: LogKind, pos?: string | null, side?: string | null): Session {
+  const key = itemKey(moveId, pos, side);
   const cur = session.items[key];
   const stageKind = STAGE_KIND[kind] ?? null;
   const live = cur ? liveOf(cur) : emptyLive();
@@ -160,18 +174,45 @@ function makeItem(kind: Kind | null, l: Live): SessionItem {
 }
 
 /** Adds up live records for a move (or every move), optionally from one position. Old entries with no position count everywhere. */
-export function liveRecord(p: Progress, moveId?: string, pos?: string): Live {
+export function liveRecord(p: Progress, moveId?: string, pos?: string, sf?: SideFilter): Live {
   const out = emptyLive();
   for (const s of p.sessions) {
     for (const [key, it] of Object.entries(s.items)) {
       const k = splitKey(key);
       if (moveId !== undefined && k.moveId !== moveId) continue;
       if (pos !== undefined && k.pos !== null && k.pos !== pos) continue;
+      if (!onSide(k, sf)) continue;
       const l = liveOf(it);
       out.landed += l.landed; out.missed += l.missed; out.stopped += l.stopped; out.caught += l.caught;
     }
   }
   return out;
+}
+
+/** Two entries for the same move, position and day combined: best practice, counts added. */
+function mergeItems(a: SessionItem, b: SessionItem): SessionItem {
+  const kind = !a.kind ? b.kind : !b.kind ? a.kind : KIND_RANK[a.kind] >= KIND_RANK[b.kind] ? a.kind : b.kind;
+  const x = liveOf(a), y = liveOf(b);
+  return makeItem(kind, { landed: x.landed + y.landed, missed: x.missed + y.missed, stopped: x.stopped + y.stopped, caught: x.caught + y.caught });
+}
+
+/**
+ * Rewrites entry keys, e.g. when a position is merged into another. `rename`
+ * returns the new key, or null to keep it. Entries that land on the same key are
+ * combined. Returns `p` itself when nothing changed.
+ */
+export function renameKeys(p: Progress, rename: (k: ReturnType<typeof splitKey>) => string | null): Progress {
+  let changed = false;
+  const sessions = p.sessions.map(s => {
+    const items: Record<string, SessionItem> = {};
+    for (const [key, it] of Object.entries(s.items)) {
+      const next = rename(splitKey(key)) ?? key;
+      if (next !== key) changed = true;
+      items[next] = items[next] ? mergeItems(items[next], it) : it;
+    }
+    return { ...s, items };
+  });
+  return changed ? { ...p, sessions } : p;
 }
 
 /** What one day's entry says, e.g. "Drilled · Landed ×2 · Caught". */

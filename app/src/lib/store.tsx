@@ -1,12 +1,24 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { techniques } from '../data/catalog';
+import { migrateProgress, techniques, type Side } from '../data/catalog';
 import { colors } from '../theme';
 import * as db from './db';
 import { addItem, localDate, removeMove, stageOf, type LogKind, type Progress, type Session, type Stage } from './progress';
 
-/** One logged move. `pos` is the position it started from. */
-export interface LogEntry { moveId: string; kind: LogKind; pos?: string | null }
+/**
+ * One logged move. `pos` is the position it started from; `side` is the
+ * attacker's side, only for moves that work from both sides of that position.
+ */
+export interface LogEntry { moveId: string; kind: LogKind; pos?: string | null; side?: Side | null }
+
+/** Loads progress, moving any logs from merged positions over first. */
+function loadMigrated(): Progress {
+  const p = db.loadProgress();
+  const m = migrateProgress(p);
+  if (m === p) return p;
+  db.replaceAll(m);
+  return db.loadProgress();
+}
 
 interface Store {
   progress: Progress;
@@ -29,7 +41,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [initial, setInitial] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    db.openDb().then(() => setInitial(db.loadProgress())).catch(e => setError(String(e?.message ?? e)));
+    db.openDb().then(() => setInitial(loadMigrated())).catch(e => setError(String(e?.message ?? e)));
   }, []);
   if (error) return <View style={styles.center}><Text style={styles.err}>{`Couldn't open your saved progress: ${error}`}</Text></View>;
   if (!initial) return <View style={styles.center}><ActivityIndicator color={colors.brass} /></View>;
@@ -45,7 +57,7 @@ function LoadedProvider({ initial, children }: { initial: Progress; children: Re
   const logMoves = useCallback((date: string, entries: LogEntry[]) => {
     const before = new Map(entries.map(e => [e.moveId, stageOf(progress, e.moveId)]));
     let s = progress.sessions.find(x => x.date === date) ?? newSession(date);
-    for (const e of entries) s = addItem(s, e.moveId, e.kind, e.pos);
+    for (const e of entries) s = addItem(s, e.moveId, e.kind, e.pos, e.side);
     db.saveSession(s);
     const next = db.loadProgress();
     setProgress(next);
@@ -62,7 +74,7 @@ function LoadedProvider({ initial, children }: { initial: Progress; children: Re
   const setBase = useCallback((moveId: string, st: Stage) => { db.setBaseStage(moveId, st); setProgress(db.loadProgress()); }, []);
   const removeSession = useCallback((id: string) => { db.deleteSession(id); setProgress(db.loadProgress()); }, []);
 
-  const restore = useCallback((p: Progress) => { db.replaceAll(p); setProgress(db.loadProgress()); }, []);
+  const restore = useCallback((p: Progress) => { db.replaceAll(migrateProgress(p)); setProgress(db.loadProgress()); }, []);
 
   const value = useMemo(() => ({ progress, stage, logMoves, clearToday, setBase, removeSession, restore }), [progress, stage, logMoves, clearToday, setBase, removeSession, restore]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

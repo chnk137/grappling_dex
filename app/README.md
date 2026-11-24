@@ -32,7 +32,7 @@ The iOS and Android version of the Grappling Dex, built with Expo (SDK 58), Expo
 | Path | What's there |
 | --- | --- |
 | `src/app/` | Screens (Expo Router): Dex and Progress tabs, `entry/[id]`, the `log` sheet |
-| `src/data/catalog.json` | 40 positions, 109 techniques, 36 combos. Generated from the web dex with `npm run catalog`; edit the lists in `../grappling-dex.html`, not this file |
+| `src/data/catalog.json` | 39 positions, 109 techniques, 36 combos. Generated from the web dex with `npm run catalog`; edit the lists in `../grappling-dex.html`, not this file |
 | `src/data/catalog.ts` | Catalog types and helpers: related moves, combos, scorecards, gaps |
 | `src/lib/progress.ts` | Stage rules, pure TypeScript, shared with the tests |
 | `src/lib/db.ts` | On-device SQLite storage (phones); `db.web.ts` is the browser-preview version |

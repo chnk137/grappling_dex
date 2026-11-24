@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SectionLabel, TypeIcon } from '../components/ui';
-import { nameOf, techniqueById, techniques, TYPES } from '../data/catalog';
+import { logOptions, nameOf, sideLabel, techniqueById, techniques, TYPES, type LogOption } from '../data/catalog';
 import { KIND_LABEL, KIND_LONG, lastPosition, localDate, movesIn, STAGES, type LogKind } from '../lib/progress';
 import { useProgress, type LogEntry } from '../lib/store';
 import { colors, radius, space } from '../theme';
@@ -41,21 +41,23 @@ export default function LogScreen() {
     [progress],
   ).filter(id => !pickedIds.has(id));
 
-  // Starts on the position this move was last logged from (or its only one); otherwise you pick.
-  const defaultPos = (moveId: string) => {
-    const from = techniqueById.get(moveId)!.from;
+  // Starts on the position this move was last logged from (or its only option); otherwise you pick.
+  const defaultOption = (moveId: string): Partial<LogOption> => {
+    const opts = logOptions(techniqueById.get(moveId)!);
     const last = lastPosition(progress, moveId);
-    return from.length === 1 ? from[0] : last && from.includes(last) ? last : null;
+    const lastOpts = opts.filter(o => o.pos === last);
+    return opts.length === 1 ? opts[0] : lastOpts.length === 1 ? lastOpts[0] : {};
   };
   const add = (moveId: string) => {
-    setPicked(p => [...p, { uid: nextUid++, moveId, kind: 'drilled', pos: defaultPos(moveId) }]);
+    setPicked(p => [...p, { uid: nextUid++, moveId, kind: 'drilled', pos: null, side: null, ...defaultOption(moveId) }]);
     setQuery('');
     Haptics.selectionAsync();
   };
+  const optKey = (o: { pos?: string | null; side?: string | null }) => `${o.pos}:${o.side ?? ''}`;
   const addAnother = (e: Row) => {
-    const used = new Set(picked.filter(x => x.moveId === e.moveId).map(x => x.pos));
-    const free = techniqueById.get(e.moveId)!.from.filter(f => !used.has(f));
-    setPicked(p => [...p, { uid: nextUid++, moveId: e.moveId, kind: e.kind, pos: free.length === 1 ? free[0] : null }]);
+    const used = new Set(picked.filter(x => x.moveId === e.moveId).map(optKey));
+    const free = logOptions(techniqueById.get(e.moveId)!).filter(o => !used.has(optKey(o)));
+    setPicked(p => [...p, { uid: nextUid++, moveId: e.moveId, kind: e.kind, pos: null, side: null, ...(free.length === 1 ? free[0] : {}) }]);
   };
   const update = (uid: number, patch: Partial<LogEntry>) => setPicked(p => p.map(e => (e.uid === uid ? { ...e, ...patch } : e)));
   const remove = (uid: number) => setPicked(p => p.filter(e => e.uid !== uid));
@@ -129,8 +131,9 @@ export default function LogScreen() {
         )}
 
         {picked.map(e => {
-          const from = techniqueById.get(e.moveId)!.from;
-          const used = new Set(picked.filter(x => x.moveId === e.moveId && x.uid !== e.uid).map(x => x.pos));
+          const opts = logOptions(techniqueById.get(e.moveId)!);
+          const used = new Set(picked.filter(x => x.moveId === e.moveId && x.uid !== e.uid).map(optKey));
+          const free = opts.filter(o => !used.has(optKey(o)));
           return (
           <View key={e.uid} style={[styles.picked, flagged && !e.pos && styles.pickedNeed]} onLayout={ev => rowY.current.set(e.uid, ev.nativeEvent.layout.y)}>
             <View style={styles.pickedHead}>
@@ -154,13 +157,17 @@ export default function LogScreen() {
             </View>
             <Text style={[styles.fromLabel, !e.pos && { color: colors.brass }]}>{e.pos ? 'From' : 'From where?'}</Text>
             <View style={styles.posRow} accessibilityRole="radiogroup" accessibilityLabel={`Where ${nameOf(e.moveId)} started from`}>
-              {from.filter(f => !used.has(f)).map(f => (
-                <Pressable key={f} onPress={() => update(e.uid, { pos: f })} style={[styles.posChip, e.pos === f && styles.posOn]} accessibilityRole="radio" accessibilityState={{ selected: e.pos === f }}>
-                  <Text style={[styles.posText, e.pos === f && { color: colors.bg }]}>{nameOf(f)}</Text>
-                </Pressable>
-              ))}
+              {free.map(o => {
+                const on = e.pos === o.pos && (e.side ?? null) === o.side;
+                const label = `${nameOf(o.pos)}${o.side ? ` · ${sideLabel(o.pos, o.side)}` : ''}`;
+                return (
+                  <Pressable key={optKey(o)} onPress={() => update(e.uid, { pos: o.pos, side: o.side })} style={[styles.posChip, on && styles.posOn]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
+                    <Text style={[styles.posText, on && { color: colors.bg }]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            {from.length > used.size + 1 && (
+            {free.length > 1 && (
               <Pressable onPress={() => addAnother(e)} hitSlop={8} accessibilityRole="button">
                 <Text style={styles.another}>+ Also from another position</Text>
               </Pressable>
