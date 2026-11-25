@@ -20,6 +20,7 @@ const START_SCALE = 1.05;
 const FONT = Platform.select({ web: '-apple-system, system-ui, sans-serif', default: undefined });
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+type Box = { x0: number; y0: number; x1: number; y1: number };
 type Selection = { kind: 'move'; id: string; at: string } | { kind: 'position'; id: string } | null;
 
 /** The position you logged most recently, else closed guard. */
@@ -37,23 +38,34 @@ export default function MapScreen() {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [labels, setLabels] = useState(false);
   const [sel, setSel] = useState<Selection>(null);
+  // The part of the world on screen, updated when a gesture ends. Move names are only
+  // drawn there: SVG text is slow on iOS, and drawing all 243 made zooming lag.
+  const [vis, setVis] = useState<Box | null>(null);
 
   // Screen point = world point × scale + translate (transform origin at the top left).
   const s = useSharedValue(START_SCALE);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const view = useRef({ s: START_SCALE, tx: 0, ty: 0 }); // JS-side copy, for taps
+  // When the map last moved under a finger: a tap right after a drag or pinch is part of it, not a tap.
+  const movedAt = useRef(0);
   const sync = useCallback((ns: number, nx: number, ny: number, animate = false) => {
     view.current = { s: ns, tx: nx, ty: ny };
     if (animate) { s.set(withTiming(ns)); tx.set(withTiming(nx)); ty.set(withTiming(ny)); }
     else { s.set(ns); tx.set(nx); ty.set(ny); }
     setLabels(ns >= LABEL_SCALE);
   }, [s, tx, ty]);
+  const settle = useCallback((box = size) => {
+    if (!box) return;
+    const v = view.current, m = 160; // margin so a short drag doesn't reveal unnamed moves
+    setVis({ x0: -v.tx / v.s - m, y0: -v.ty / v.s - m, x1: (box.w - v.tx) / v.s + m, y1: (box.h - v.ty) / v.s + m });
+  }, [size]);
 
   const centerOn = useCallback((x: number, y: number, scale: number, animate: boolean, box = size) => {
     if (!box) return;
     sync(scale, box.w / 2 - x * scale, box.h / 2 - y * scale, animate);
-  }, [size, sync]);
+    settle(box);
+  }, [size, sync, settle]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width: w, height: h } = e.nativeEvent.layout;
@@ -67,20 +79,25 @@ export default function MapScreen() {
     const ns = clamp(v.s * factor, MIN_SCALE, MAX_SCALE);
     const k = ns / v.s;
     sync(ns, fx - (fx - v.tx) * k, fy - (fy - v.ty) * k, animate);
-  }, [sync]);
+    if (animate) settle();
+  }, [sync, settle]);
 
   const pan = usePanGesture({
     runOnJS: true,
     minDistance: 4,
-    onUpdate: e => { const v = view.current; sync(v.s, v.tx + e.changeX, v.ty + e.changeY); },
+    onUpdate: e => { movedAt.current = Date.now(); const v = view.current; sync(v.s, v.tx + e.changeX, v.ty + e.changeY); },
+    onDeactivate: () => settle(),
   });
   const pinch = usePinchGesture({
     runOnJS: true,
-    onUpdate: e => zoomBy(e.scaleChange, e.focalX, e.focalY),
+    onUpdate: e => { movedAt.current = Date.now(); zoomBy(e.scaleChange, e.focalX, e.focalY); },
+    onDeactivate: () => settle(),
   });
   const tap = useTapGesture({
     runOnJS: true,
+    maxDistance: 10, // a drag or pinch isn't a tap
     onActivate: e => {
+      if (Date.now() - movedAt.current < 300) return;
       const v = view.current;
       const hit = hitTest((e.x - v.tx) / v.s, (e.y - v.ty) / v.s, v.s);
       if (!hit) { setSel(null); return; }
@@ -103,7 +120,7 @@ export default function MapScreen() {
       <GestureDetector gesture={gesture}>
         <View style={styles.board} onLayout={onLayout} accessibilityLabel="Map of positions and moves. Drag to move around, pinch to zoom, tap a circle to select it.">
           <Animated.View style={[styles.world, worldStyle]}>
-            <World progress={progress} labels={labels} sel={sel} />
+            <World progress={progress} labels={labels} sel={sel} vis={vis} />
           </Animated.View>
         </View>
       </GestureDetector>
@@ -176,7 +193,8 @@ function Label({ x, y, anchor, size, bold, color, text }: { x: number; y: number
 }
 
 /** The drawing. Only redraws when progress, labels or the selection change, never while panning. */
-const World = memo(function World({ progress, labels, sel }: { progress: Progress; labels: boolean; sel: Selection }) {
+const World = memo(function World({ progress, labels, sel, vis }: { progress: Progress; labels: boolean; sel: Selection; vis: Box | null }) {
+  const onScreen = (x: Sat) => !vis || (x.x >= vis.x0 && x.x <= vis.x1 && x.y >= vis.y0 && x.y <= vis.y1);
   const satStage = useMemo(() => new Map(sats.map(x => [x.key, posStage(progress, x.t.id, x.hub.p.id)])), [progress]);
   const hubState = useMemo(() => new Map(hubs.map(h => {
     const learned = sats.some(x => x.hub === h && (satStage.get(x.key) ?? 0) >= 2);
@@ -244,7 +262,7 @@ const World = memo(function World({ progress, labels, sel }: { progress: Progres
             {picked && <Circle cx={x.x} cy={x.y} r={14} fill="none" stroke={c} strokeWidth={2} />}
             <Circle cx={x.x} cy={x.y} r={9} fill={st >= 2 ? c : '#0c1222'} stroke={c} strokeWidth={st >= 1 ? 2 : 1.2} strokeOpacity={st >= 1 ? 1 : 0.5} />
             {st >= 3 && <Circle cx={x.x} cy={x.y} r={3.5} fill="#fff" fillOpacity={0.85} />}
-            {(labels || (sel && on)) && (
+            {(sel && on ? sel.kind === 'move' || onScreen(x) : labels && onScreen(x)) && (
               <Label x={x.x + lx} y={x.y + ly} anchor={anchor} size={11.5} color={st ? colors.ink : colors.muted} text={x.t.name + (x.t.gi ? ' (gi)' : '')} />
             )}
           </G>
