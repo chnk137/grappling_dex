@@ -5,6 +5,7 @@ import { Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } f
 import { GestureDetector, usePanGesture, usePinchGesture, useSimultaneousGestures, useTapGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, G, Line, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import { FlowView } from '../../components/FlowView';
 import { Pips, TypeIcon } from '../../components/ui';
 import { positionActive, TYPES } from '../../data/catalog';
 import { hitTest, hubById, hubs, links, sats, WORLD, type Hub, type Sat } from '../../data/mapLayout';
@@ -32,7 +33,31 @@ function startHub(p: Progress): Hub {
   return hubById.get('closed')!;
 }
 
+type Mode = 'flow' | 'whole';
+
+/** The Map tab: a focused "from here" flow by default, or the whole ring map. */
 export default function MapScreen() {
+  const router = useRouter();
+  const { progress } = useProgress();
+  const [mode, setMode] = useState<Mode>('flow');
+  const start = useMemo(() => startHub(progress).p.id, [progress]);
+  return (
+    <View style={styles.root}>
+      <View style={styles.modeBar} accessibilityRole="tablist">
+        {(['flow', 'whole'] as Mode[]).map(m => (
+          <Pressable key={m} onPress={() => setMode(m)} style={[styles.modeBtn, mode === m && styles.modeOn]} accessibilityRole="tab" accessibilityState={{ selected: mode === m }}>
+            <Text style={[styles.modeText, mode === m && { color: colors.bg }]}>{m === 'flow' ? 'From here' : 'Whole map'}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {mode === 'flow'
+        ? <FlowView startId={start} onOpenEntry={id => router.push({ pathname: '/entry/[id]', params: { id } })} />
+        : <WholeMap />}
+    </View>
+  );
+}
+
+function WholeMap() {
   const router = useRouter();
   const { progress, stage } = useProgress();
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
@@ -274,6 +299,10 @@ const World = memo(function World({ progress, labels, sel, vis }: { progress: Pr
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#060912' },
+  modeBar: { flexDirection: 'row', margin: space.md, marginBottom: 0, borderRadius: radius.sm + 2, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', backgroundColor: colors.bg2 },
+  modeBtn: { flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center' },
+  modeOn: { backgroundColor: colors.brass },
+  modeText: { color: colors.ink, fontSize: 14, fontWeight: '700' },
   board: { flex: 1, overflow: 'hidden' },
   world: { position: 'absolute', left: 0, top: 0, width: WORLD.width, height: WORLD.height, transformOrigin: '0 0' },
   tools: { position: 'absolute', right: space.md, top: space.md, gap: 8 },

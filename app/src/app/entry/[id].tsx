@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Bar, Chips, Pips, SectionLabel, TypeIcon } from '../../components/ui';
+import { Bar, Button, Chips, Pips, SectionLabel, TypeIcon } from '../../components/ui';
 import {
   attackSides, combos, flipSide, logOptions, entryNo, hasSides, mainSide, positionActive, positionById, positionLinks, positionRecord, relatedMoves, scorecard,
   sideLabel, techniqueById, techniques, TIERS, TYPES, type MoveType, type Side, type Technique,
@@ -86,6 +86,7 @@ function MoveEntry({ t }: { t: Technique }) {
       )}
       <Text style={styles.h1}>{t.name}</Text>
       <Text style={styles.note}>{t.note}</Text>
+      <Button label="Map from here ›" kind="outline" onPress={() => router.push({ pathname: '/flow/[id]', params: { id: t.id } })} />
 
       <View style={styles.box}>
         <View style={styles.boxHead}><Text style={styles.stage}>{STAGES[s]}</Text><Pips stage={s} /></View>
@@ -195,6 +196,7 @@ function LiveBars({ rec, empty }: { rec: Live; empty: string }) {
 }
 
 function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
+  const router = useRouter();
   const { progress } = useProgress();
   const p = positionById.get(id)!;
   const sided = hasSides(id);
@@ -220,6 +222,7 @@ function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
         </View>
       )}
       <Text style={styles.h1}>{p.name}</Text>
+      <Button label="Map from here ›" kind="outline" onPress={() => router.push({ pathname: '/flow/[id]', params: { id } })} />
       {sided && (
         <View style={styles.tabs} accessibilityRole="tablist">
           {(['bottom', 'top'] as Side[]).map(sd => (
