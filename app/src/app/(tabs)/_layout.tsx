@@ -7,6 +7,12 @@ const ListIcon = ({ color }: { color: ColorValue }) => (
     {[20, 20, 13].map((w, i) => <View key={i} style={{ width: w, height: 2.5, borderRadius: 2, backgroundColor: color }} />)}
   </View>
 );
+const MapIcon = ({ color }: { color: ColorValue }) => (
+  <View style={{ width: 22, height: 20 }}>
+    <View style={{ position: 'absolute', left: 7, top: 6, width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: color }} />
+    {[[0, 0], [16, 2], [2, 14], [15, 14]].map(([l, t], i) => <View key={i} style={{ position: 'absolute', left: l, top: t, width: 5, height: 5, borderRadius: 3, backgroundColor: color }} />)}
+  </View>
+);
 const BarsIcon = ({ color }: { color: ColorValue }) => (
   <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 18 }}>
     {[9, 18, 13].map((h, i) => <View key={i} style={{ width: 3.5, height: h, borderRadius: 2, backgroundColor: color }} />)}
@@ -25,6 +31,7 @@ export default function TabLayout() {
         sceneStyle: { backgroundColor: colors.bg },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Grappling Dex', tabBarLabel: 'Dex', tabBarIcon: ({ color }) => <ListIcon color={color} /> }} />
+      <Tabs.Screen name="map" options={{ title: 'Map', tabBarIcon: ({ color }) => <MapIcon color={color} /> }} />
       <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: ({ color }) => <BarsIcon color={color} /> }} />
     </Tabs>
   );

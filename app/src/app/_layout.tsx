@@ -1,10 +1,12 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ProgressProvider } from '../lib/store';
 import { colors } from '../theme';
 
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ProgressProvider>
       <StatusBar style="light" />
       <Stack
@@ -20,5 +22,6 @@ export default function RootLayout() {
         <Stack.Screen name="privacy" options={{ title: 'Privacy policy', headerBackTitle: 'Back' }} />
       </Stack>
     </ProgressProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -416,7 +416,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 18</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 19</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -1036,9 +1036,9 @@ techSel.append("path").attr("class", "glyph").attr("d", d => d3.symbol(TYPES[d.t
 techSel.append("circle").attr("class", "cursor").attr("r", 16);
 // Labels point away from the hub: right of the ring on the right, left on the left.
 techSel.append("text")
-  .attr("text-anchor", d => Math.cos(d.a) > 0.25 ? "start" : Math.cos(d.a) < -0.25 ? "end" : "middle")
-  .attr("x", d => Math.cos(d.a) > 0.25 ? 14 : Math.cos(d.a) < -0.25 ? -14 : 0)
-  .attr("y", d => Math.abs(Math.cos(d.a)) > 0.25 ? 4 : Math.sin(d.a) > 0 ? 24 : -15)
+  .attr("text-anchor", d => Math.cos(d.a) >= 0 ? "start" : "end")
+  .attr("x", d => Math.cos(d.a) >= 0 ? 13 : -13)
+  .attr("y", d => 4 + Math.sin(d.a) * (Math.abs(Math.cos(d.a)) < 0.35 ? 6 : 0))
   .text(d => d.name + (d.gi ? " (gi)" : ""));
 gNodes.selectAll(".node")
   .on("click", (e, d) => { e.stopPropagation(); select(d.id); })
