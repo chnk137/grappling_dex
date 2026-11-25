@@ -151,9 +151,9 @@ main { flex: 1; display: flex; min-height: 0; }
 #board { flex: 1; min-width: 0; position: relative; background: radial-gradient(ellipse at 50% 40%, #16203a 0%, var(--bg) 70%); }
 #board svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
 .hint { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 12px; color: var(--muted); font-size: 12px; pointer-events: none; display: flex; flex-direction: column; gap: 2px; }
-.hublink { stroke: var(--brass); stroke-opacity: .28; stroke-width: 2.5; }
+.hublink { stroke: var(--brass); stroke-opacity: .16; stroke-width: 2; }
 .tlink { stroke-width: 1; stroke-opacity: .22; }
-.tolink { stroke-width: 1; stroke-opacity: .16; stroke-dasharray: 4 4; }
+.tolink { stroke-width: 1; stroke-opacity: 0; stroke-dasharray: 4 4; }
 .node { cursor: pointer; }
 .node text { font-family: var(--font-body); fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
 .hub text { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .03em; }
@@ -162,12 +162,13 @@ main { flex: 1; display: flex; min-height: 0; }
 .zoomed-out .tech.hl text, .zoomed-out .tech.sel text { display: block; }
 #board { background: radial-gradient(ellipse at 50% 30%, #1a2650 0%, #0b1020 62%, #060912 100%); }
 .star { fill: #d6deff; }
-.chan { stroke: #070b16; stroke-width: 8; stroke-linecap: round; }
-.hublink { stroke: #34436b; stroke-opacity: 1; stroke-width: 3; stroke-linecap: round; }
+.chan { stroke: #070b16; stroke-width: 5; stroke-linecap: round; }
+.hublink { stroke: #34436b; stroke-opacity: .6; stroke-width: 2; stroke-linecap: round; }
 .hublink.lit { stroke: var(--brass); filter: drop-shadow(0 0 5px var(--brass)); }
 .tlink { stroke-opacity: .28; stroke-width: 1.6; stroke-linecap: round; }
 .tlink.lit { stroke-opacity: .95; filter: drop-shadow(0 0 3px currentColor); }
-.tolink.lit { stroke-opacity: .6; }
+.tolink.lit { stroke-opacity: 0; }
+.focus .tolink.lit.hl { stroke-opacity: .7; }
 .hub { color: var(--brass); }
 .aura { fill: none; stroke: var(--brass); stroke-opacity: .14; stroke-dasharray: 2 6; }
 .socket { fill: #0a1020; stroke: currentColor; stroke-width: 1.5; stroke-opacity: .35; }
@@ -289,11 +290,7 @@ aside h3 { margin: 4px 0 0; font: 600 11px var(--font-body); letter-spacing: .1e
 .x { all: unset; cursor: pointer; color: var(--muted); padding: 2px 6px; }
 .x:focus-visible { outline: 2px solid var(--brass); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-weight: 600; z-index: 30; }
-/* Phones: move-to-position lines turn the map into a web, so keep them faint unless highlighted. */
 @media (max-width: 760px) {
-  .tlink { stroke-opacity: .07; }
-  .tolink { stroke-opacity: .05; }
-  .chan { stroke-opacity: .35; }
   .hub text { font-size: 16px; }
 }
 @media (max-width: 760px) {
@@ -419,7 +416,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 17</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 18</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -953,18 +950,23 @@ function commit() { recompute(); refresh(); save(); }
 migrateData(); // older logs from merged positions (saved on the next change)
 
 // ---------- Board ----------
-TECHS.forEach((t, i) => {
-  const hs = t.from.map(id => hubById.get(id));
-  t.x = d3.mean(hs, h => h.x) + Math.cos(i * 2.4) * 30;
-  t.y = d3.mean(hs, h => h.y) + Math.sin(i * 2.4) * 30;
+// Each position is a hub with its own ring of moves. A move that works from several
+// positions gets a copy in each ring (a "satellite"), linked only to that hub, so there
+// are no long lines across the map. Its entry lists the other positions.
+const MAP_SCALE = 1.7; // spread positions out to make room for the rings
+HUBS.forEach(h => { h.x *= MAP_SCALE; h.y *= MAP_SCALE; });
+const TYPE_ORDER = ["sub", "sweep", "pass", "move", "escape"];
+const SATS = HUBS.flatMap(h => {
+  const ts = TECHS.filter(t => t.from.includes(h.id)).sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type));
+  const r = Math.max(64, ts.length * 26 / (2 * Math.PI));
+  h.ring = ts.length ? r : 0;
+  return ts.map((t, i) => {
+    const a = -Math.PI / 2 + (i + 0.5) * 2 * Math.PI / ts.length;
+    return { id: t.id, name: t.name, type: t.type, gi: t.gi, hub: false, t, h, a, x: h.x + Math.cos(a) * r, y: h.y + Math.sin(a) * r };
+  });
 });
-const forceLinks = TECHS.flatMap(t => t.from.map(h => ({ source: t.id, target: h })));
-const sim = d3.forceSimulation(ALL)
-  .force("link", d3.forceLink(forceLinks).id(d => d.id).distance(l => l.source.from && l.source.from.length > 2 ? 40 : 62).strength(.5))
-  .force("charge", d3.forceManyBody().strength(d => d.hub ? -200 : -45))
-  .force("collide", d3.forceCollide(d => d.hub ? 44 : 15))
-  .stop();
-for (let i = 0; i < 400; i++) sim.tick();
+// A move's own x/y (for centring the map on it) is its first copy.
+TECHS.forEach(t => { const c = SATS.find(sat => sat.t === t); t.x = c.x; t.y = c.y; });
 
 let selected = null, hidden = new Set(), view = "dex", listTab = "moves";
 const phoneQuery = window.matchMedia("(max-width: 760px)");
@@ -998,18 +1000,24 @@ const defs = svg.append("defs");
 // A fixed starfield (seeded, so it looks the same on every load).
 let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 gStars.selectAll("circle").data(d3.range(320)).join("circle").attr("class", "star")
-  .attr("cx", () => -300 + rnd() * 2100).attr("cy", () => -200 + rnd() * 1950)
+  .attr("cx", () => (-300 + rnd() * 2100) * MAP_SCALE).attr("cy", () => (-200 + rnd() * 1950) * MAP_SCALE)
   .attr("r", () => .4 + rnd() * 1.3).attr("opacity", () => .15 + rnd() * .55);
+// Position links run from ring edge to ring edge, so they don't cut through the move rings.
+const edge = (a, b) => {
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, ra = (a.ring || 30) + 14, rb = (b.ring || 30) + 14;
+  return [a.x + dx / len * ra, a.y + dy / len * ra, b.x - dx / len * rb, b.y - dy / len * rb];
+};
 const hubLinkSel = gHub.selectAll("line").data(HUB_LINKS).join("line").attr("class", "hublink")
-  .attr("x1", d => hubById.get(d[0]).x).attr("y1", d => hubById.get(d[0]).y)
-  .attr("x2", d => hubById.get(d[1]).x).attr("y2", d => hubById.get(d[1]).y);
-const tlinks = TECHS.flatMap(t => t.from.map(h => ({ t, h: hubById.get(h) })));
+  .each(function (d) { const [x1, y1, x2, y2] = edge(hubById.get(d[0]), hubById.get(d[1])); d3.select(this).attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2); });
+// Spokes: each satellite to its own hub.
+const tlinks = SATS.map(sat => ({ sat, t: sat.t, h: sat.h }));
 const tLinkSel = gT.selectAll("line").data(tlinks).join("line").attr("class", d => "tlink t-" + d.t.type).attr("stroke", "currentColor")
-  .attr("x1", d => d.t.x).attr("y1", d => d.t.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
-const tolinks = TECHS.filter(t => t.to).map(t => ({ t, h: hubById.get(t.to) }));
+  .attr("x1", d => d.sat.x).attr("y1", d => d.sat.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
+// Where a move leads: only drawn while that move or its destination is selected.
+const tolinks = SATS.filter(sat => sat.t.to).map(sat => ({ sat, t: sat.t, h: hubById.get(sat.t.to) }));
 const toLinkSel = gTo.selectAll("line").data(tolinks).join("line").attr("class", d => "tolink t-" + d.t.type).attr("stroke", "currentColor")
-  .attr("x1", d => d.t.x).attr("y1", d => d.t.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
-gChan.selectAll("line").data([...HUB_LINKS.map(d => [hubById.get(d[0]), hubById.get(d[1])]), ...tlinks.map(d => [d.t, d.h])]).join("line")
+  .attr("x1", d => d.sat.x).attr("y1", d => d.sat.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
+gChan.selectAll("line").data([...HUB_LINKS.map(d => { const [x1, y1, x2, y2] = edge(hubById.get(d[0]), hubById.get(d[1])); return [{ x: x1, y: y1 }, { x: x2, y: y2 }]; }), ...tlinks.map(d => [d.sat, d.h])]).join("line")
   .attr("class", "chan").attr("x1", d => d[0].x).attr("y1", d => d[0].y).attr("x2", d => d[1].x).attr("y2", d => d[1].y);
 const oct = r => d3.range(8).map(i => { const a = Math.PI / 8 + i * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r].join(","); }).join(" ");
 const hubSel = gNodes.selectAll("g.hub").data(HUBS).join("g").attr("class", "node hub")
@@ -1018,14 +1026,20 @@ hubSel.append("circle").attr("class", "aura").attr("r", 36);
 hubSel.append("circle").attr("class", "socket").attr("r", 22);
 hubSel.append("circle").attr("class", "orb").attr("r", 17).attr("fill", "url(#g-hub)");
 hubSel.append("circle").attr("class", "cursor").attr("r", 29);
-hubSel.append("text").attr("text-anchor", "middle").attr("y", 40).text(d => d.name);
-const techSel = gNodes.selectAll("g.tech").data(TECHS).join("g").attr("class", d => "node tech t-" + d.type)
-  .attr("transform", d => `translate(${d.x},${d.y})`).attr("tabindex", 0).attr("role", "button").attr("aria-label", d => d.name);
+// The position's name sits under its ring of moves, like a nameplate.
+hubSel.append("text").attr("text-anchor", "middle").attr("y", d => (d.ring ? d.ring + 34 : 40)).text(d => d.name);
+const techSel = gNodes.selectAll("g.tech").data(SATS).join("g").attr("class", d => "node tech t-" + d.type)
+  .attr("transform", d => `translate(${d.x},${d.y})`).attr("tabindex", 0).attr("role", "button").attr("aria-label", d => `${d.name} from ${d.h.name}`);
 techSel.append("circle").attr("class", "socket").attr("r", 10);
 techSel.append("circle").attr("class", "orb").attr("r", 7.5).attr("fill", d => `url(#g-${d.type})`);
 techSel.append("path").attr("class", "glyph").attr("d", d => d3.symbol(TYPES[d.type].sym, 24)());
 techSel.append("circle").attr("class", "cursor").attr("r", 16);
-techSel.append("text").attr("x", 15).attr("y", 4).text(d => d.name + (d.gi ? " (gi)" : ""));
+// Labels point away from the hub: right of the ring on the right, left on the left.
+techSel.append("text")
+  .attr("text-anchor", d => Math.cos(d.a) > 0.25 ? "start" : Math.cos(d.a) < -0.25 ? "end" : "middle")
+  .attr("x", d => Math.cos(d.a) > 0.25 ? 14 : Math.cos(d.a) < -0.25 ? -14 : 0)
+  .attr("y", d => Math.abs(Math.cos(d.a)) > 0.25 ? 4 : Math.sin(d.a) > 0 ? 24 : -15)
+  .text(d => d.name + (d.gi ? " (gi)" : ""));
 gNodes.selectAll(".node")
   .on("click", (e, d) => { e.stopPropagation(); select(d.id); })
   .on("keydown", (e, d) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(d.id); } });
@@ -1036,7 +1050,7 @@ svg.call(zoom);
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function fit() {
   const box = svg.node().getBoundingClientRect();
-  const xs = ALL.map(n => n.x), ys = ALL.map(n => n.y);
+  const xs = [...HUBS, ...SATS].map(n => n.x), ys = [...HUBS, ...SATS].map(n => n.y);
   const x0 = d3.min(xs) - 60, x1 = d3.max(xs) + 160, y0 = d3.min(ys) - 40, y1 = d3.max(ys) + 60;
   const k = Math.min(box.width / (x1 - x0), box.height / (y1 - y0)) || 0.5;
   svg.call(zoom.transform, d3.zoomIdentity.translate((box.width - (x1 - x0) * k) / 2 - x0 * k, (box.height - (y1 - y0) * k) / 2 - y0 * k).scale(k));
@@ -1069,13 +1083,20 @@ function related(id) {
   } else { n.from.forEach(h => set.add(h)); if (n.to) set.add(n.to); }
   return set;
 }
+// A move's copy at one position shows your progress from that position.
+function satState(d) {
+  const s = posStage(d.t.id, d.h.id);
+  return s >= 2 ? "learned" : (s === 1 || d.h.id === "standing" || hubActive(d.h)) ? "reach" : "locked";
+}
 function renderMap() {
   const rel = selected ? related(selected) : null;
   svg.classed("focus", !!selected);
   gNodes.selectAll(".node").attr("display", d => !d.hub && hidden.has(d.type) ? "none" : null).each(function (d) {
-    const s = mapState(d);
+    const s = d.hub ? mapState(d) : satState(d);
     this.classList.toggle("learned", s === "learned"); this.classList.toggle("reach", s === "reach"); this.classList.toggle("locked", s === "locked");
-    this.classList.toggle("sel", d.id === selected); this.classList.toggle("hl", !!rel && rel.has(d.id));
+    this.classList.toggle("sel", d.id === selected);
+    // A copy lights up when its move, its own position, or where it leads is selected.
+    this.classList.toggle("hl", !!rel && (d.hub ? rel.has(d.id) : d.id === selected || d.h.id === selected || d.t.to === selected));
   });
   tLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
   toLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
