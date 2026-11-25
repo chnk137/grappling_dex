@@ -149,7 +149,44 @@ main { flex: 1; display: flex; min-height: 0; }
 
 /* Map */
 #board { flex: 1; min-width: 0; position: relative; background: radial-gradient(ellipse at 50% 40%, #16203a 0%, var(--bg) 70%); }
-#board svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#board #svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+/* Map from here */
+.modebar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg-2); }
+.modebar button { border: 0; background: transparent; color: var(--ink); padding: 8px 18px; font: 700 13px var(--font-body); cursor: pointer; white-space: nowrap; }
+.modebar button[aria-selected="true"] { background: var(--brass); color: var(--bg); }
+.flow { position: absolute; inset: 0; overflow-y: auto; padding: 64px 16px 40px; background: var(--bg); }
+.flow[hidden] { display: none; }
+.finner { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.flow h3 { margin: 12px 0 2px; font: 600 11px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ftrail { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+.ftrail button { all: unset; cursor: pointer; text-decoration: underline; color: var(--muted); }
+.ftrail button[aria-current] { color: var(--brass); font-weight: 700; text-decoration: none; }
+.ftoggle { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); }
+.ftoggle button { border: 1px solid var(--brass); background: transparent; color: var(--brass); border-radius: 999px; padding: 6px 12px; font: 700 12.5px var(--font-body); cursor: pointer; }
+.ftoggle button[aria-pressed="true"] { background: var(--brass); color: var(--bg); }
+.froot { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--brass); border-radius: 10px; background: var(--brass-soft); }
+.froot .kind { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.froot b { display: flex; align-items: center; gap: 8px; font: 800 22px var(--font-display); color: var(--ink); }
+.froot .linkbtn { align-self: flex-start; color: var(--brass); }
+.frow { display: grid; grid-template-columns: 1fr 150px; gap: 8px; align-items: center; }
+.frow.single { grid-template-columns: 1fr !important; }
+.fmove { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-2); color: var(--ink); font: 14px var(--font-body); cursor: pointer; text-align: left; }
+.fmove span { flex: 1; }
+.fmove:hover, .fchips button:hover { border-color: var(--brass); }
+.fto { border: 0; background: transparent; color: var(--brass); font: 600 13.5px var(--font-body); text-align: left; cursor: pointer; padding: 8px 4px; }
+.fto.none { color: var(--muted); text-align: center; cursor: default; }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fchips button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-2); color: var(--ink); font: 13px var(--font-body); cursor: pointer; }
+.fchips small { color: var(--muted); }
+.fdest { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); display: flex; flex-direction: column; gap: 8px; }
+.fdhead { display: flex; align-items: center; gap: 10px; }
+.fdname { all: unset; cursor: pointer; flex: 1; display: flex; flex-direction: column; }
+.fdname b { font-size: 16px; color: var(--ink); text-decoration: underline; }
+.fdname small { color: var(--muted); font-size: 12px; }
+.fexpand { border: 1px solid var(--line); background: transparent; color: var(--brass); border-radius: 8px; padding: 6px 10px; font: 700 12.5px var(--font-body); cursor: pointer; }
+.mapfrom { align-self: flex-start; border: 1px solid var(--brass); background: transparent; color: var(--brass); border-radius: 8px; padding: 8px 14px; font: 700 13px var(--font-body); cursor: pointer; flex-shrink: 0; }
+.mapfrom:hover { background: var(--brass-soft); }
+@media (max-width: 760px) { .frow { grid-template-columns: 1fr 120px; } .flow { padding-top: 60px; } }
 .hint { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 12px; color: var(--muted); font-size: 12px; pointer-events: none; display: flex; flex-direction: column; gap: 2px; }
 .hublink { stroke: var(--brass); stroke-opacity: .16; stroke-width: 2; }
 .tlink { stroke-width: 1; stroke-opacity: .22; }
@@ -395,6 +432,8 @@ button { -webkit-tap-highlight-color: transparent; }
 <main>
   <div id="dex"></div>
   <div id="board" hidden>
+    <div class="modebar" role="tablist"><button role="tab" data-mode="flow">From here</button><button role="tab" data-mode="whole">Whole map</button></div>
+    <div id="flow" class="flow"></div>
     <svg id="svg" role="img" aria-label="Skill map of BJJ positions and techniques"></svg>
     <div class="hint"><span>Drag to pan, scroll or pinch to zoom.</span><span>Zoom in to read technique names.</span></div>
   </div>
@@ -416,7 +455,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 19</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 20</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -1083,12 +1122,95 @@ function related(id) {
   } else { n.from.forEach(h => set.add(h)); if (n.to) set.add(n.to); }
   return set;
 }
+// ---------- Map from here ----------
+// A focused flow from one entry: a position's moves by type (ones that lead somewhere
+// first, submissions as finish chips), where each leaves you, and that position's
+// moves on demand. Tapping moves the starting point; a trail leads back.
+let mapMode = "flow", flowTrail = null, flowMine = false, flowOpen = null;
+const FLOW_ORDER = ["sweep", "pass", "move", "escape", "sub"];
+function flowStart() {
+  for (let i = data.sessions.length - 1; i >= 0; i--) {
+    const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.pos && hubById.has(k.pos));
+    if (ks.length) return ks[ks.length - 1].pos;
+  }
+  return "closed";
+}
+function flowFrom(posId) {
+  return FLOW_ORDER.map(type => {
+    const moves = TECHS.filter(t => t.type === type && t.from.includes(posId)).map(t => ({ t, side: attackSides(t, posId)[0] || null, to: t.to ? hubById.get(t.to) : null }));
+    const sides = new Set(moves.map(m => m.side)), one = sides.size === 1 ? [...sides][0] : null;
+    return { type, label: TYPES[type].plural + (one && hasSides(posId) ? ` · ${sideLabel(posId, one)}` : ""), moves };
+  }).filter(g => g.moves.length);
+}
+function openFlow(id) {
+  flowTrail = [id]; flowOpen = null; mapMode = "flow";
+  if (isPhone) selected = null;
+  if (view === "map") refresh(); else location.hash = "map";
+}
+function renderFlow() {
+  if (!flowTrail) flowTrail = [flowStart()];
+  const root = flowTrail[flowTrail.length - 1], n = nodeById.get(root);
+  const pips_ = s => pips(s);
+  const goBtn = (id, inner, cls = "") => `<button class="${cls}" data-fgo="${id}">${inner}</button>`;
+  const destRow = (pos, via) => {
+    const moves = flowFrom(pos.id).flatMap(g => g.moves).filter(m => !flowMine || posStage(m.t.id, pos.id) >= 1);
+    const open = flowOpen === pos.id;
+    return `<div class="fdest"><div class="fdhead">${goBtn(pos.id, `<b>${esc(pos.name)}</b><small>via ${esc(via.map(t => t.name).join(", "))}</small>`, "fdname")}
+      <button class="fexpand" data-fopen="${pos.id}" aria-expanded="${open}">${moves.length} moves ${open ? "▾" : "▸"}</button></div>
+      ${open ? `<div class="fchips">${moves.map(m => goBtn(m.t.id, `${icon(m.t, 11)}${esc(m.t.name)}<small>${m.to ? "→ " + esc(m.to.name) : m.t.type === "sub" ? "🏁" : ""}</small>`)).join("") || `<p class="next">Nothing logged from here yet.</p>`}</div>` : ""}</div>`;
+  };
+  let body = "";
+  if (n.hub) {
+    const st = m => posStage(m.t.id, root);
+    const groups = flowFrom(root).map(g => ({ ...g, moves: flowMine ? g.moves.filter(m => st(m) >= 1) : g.moves })).filter(g => g.moves.length);
+    const dests = new Map();
+    groups.forEach(g => g.moves.forEach(m => { if (m.to) { if (!dests.has(m.to.id)) dests.set(m.to.id, { pos: m.to, via: [] }); dests.get(m.to.id).via.push(m.t); } }));
+    body = `<div class="froot"><span class="kind">Position · ${TIERS[n.tier]}</span><b>${icon(n, 16)} ${esc(n.name)}</b><button class="linkbtn" data-fentry="${root}">Open entry ›</button></div>
+      ${groups.length ? "" : `<p class="next">Nothing logged from here yet. Turn off “My game only” to see every move.</p>`}
+      ${groups.map(g => {
+        const finish = g.moves.every(m => !m.to);
+        return `<h3>${g.label} (${g.moves.length})${finish ? " · 🏁 finish here" : ""}</h3>` + (finish
+          ? `<div class="fchips">${g.moves.map(m => goBtn(m.t.id, `${icon(m.t, 11)}${esc(m.t.name)} ${pips_(st(m))}`)).join("")}</div>`
+          : g.moves.map(m => `<div class="frow">${goBtn(m.t.id, `${icon(m.t, 12)}<span>${esc(m.t.name)}</span>${pips_(st(m))}`, "fmove")}${m.to ? goBtn(m.to.id, `→ ${esc(m.to.name)}`, "fto") : `<span class="fto none">${m.t.type === "sub" ? "🏁" : "—"}</span>`}</div>`).join(""));
+      }).join("")}
+      ${dests.size ? `<h3>Where these lead</h3>${[...dests.values()].map(d => destRow(d.pos, d.via)).join("")}` : ""}`;
+  } else {
+    const from = n.from.map(id => hubById.get(id)).filter(p => !flowMine || posStage(root, p.id) >= 1);
+    const to = n.to ? hubById.get(n.to) : null;
+    body = `<div class="froot"><span class="kind">${TYPES[n.type].label}</span><b>${icon(n, 16)} ${esc(n.name)} ${pips_(stage(root))}</b><button class="linkbtn" data-fentry="${root}">Open entry ›</button></div>
+      <h3>Starts from (${from.length})</h3>${from.length ? from.map(p => `<div class="frow single">${goBtn(p.id, `${icon(p, 12)}<span>${esc(p.name)}</span>${pips_(posStage(root, p.id))} ›`, "fmove")}</div>`).join("") : `<p class="next">Not logged from any position yet.</p>`}
+      <h3>Leads to</h3>${to ? destRow(to, [n]) : `<p class="next">${n.type === "sub" ? "🏁 It finishes the fight." : "It doesn’t lead to a set position."}</p>`}`;
+  }
+  const el = document.getElementById("flow");
+  el.innerHTML = `<div class="finner">
+    ${flowTrail.length > 1 ? `<nav class="ftrail">${flowTrail.map((id, i) => `${i ? "<span>›</span>" : ""}<button data-fcrumb="${i}" ${i === flowTrail.length - 1 ? 'aria-current="true"' : ""}>${esc(nodeById.get(id).name)}</button>`).join("")}</nav>` : ""}
+    <div class="ftoggle"><button data-fmine aria-pressed="${flowMine}">${flowMine ? "✓ " : ""}My game only</button><span>${flowMine ? "Only moves you’ve logged" : "Everything in the dex"}</span></div>
+    ${body}</div>`;
+}
+document.getElementById("flow").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const el = document.getElementById("flow");
+  if (b.dataset.fgo) { const id = b.dataset.fgo; flowTrail = [...flowTrail.filter(x => x !== id), id]; flowOpen = null; renderFlow(); el.scrollTop = 0; }
+  else if (b.dataset.fcrumb) { flowTrail = flowTrail.slice(0, +b.dataset.fcrumb + 1); flowOpen = null; renderFlow(); el.scrollTop = 0; }
+  else if (b.dataset.fopen) { flowOpen = flowOpen === b.dataset.fopen ? null : b.dataset.fopen; renderFlow(); }
+  else if (b.hasAttribute("data-fmine")) { flowMine = !flowMine; renderFlow(); }
+  else if (b.dataset.fentry) select(b.dataset.fentry);
+});
+document.querySelectorAll(".modebar [data-mode]").forEach(b => b.onclick = () => { mapMode = b.dataset.mode; refresh(); });
+
 // A move's copy at one position shows your progress from that position.
 function satState(d) {
   const s = posStage(d.t.id, d.h.id);
   return s >= 2 ? "learned" : (s === 1 || d.h.id === "standing" || hubActive(d.h)) ? "reach" : "locked";
 }
 function renderMap() {
+  const flowMode = mapMode === "flow";
+  document.getElementById("flow").hidden = !flowMode;
+  svg.style("display", flowMode ? "none" : null);
+  document.querySelector("#board .hint").hidden = flowMode;
+  document.querySelectorAll(".modebar [data-mode]").forEach(b => b.setAttribute("aria-selected", b.dataset.mode === mapMode));
+  if (flowMode) { renderFlow(); return; }
+  if (!fitted) { isPhone ? fitPhone() : fit(); fitted = true; }
   const rel = selected ? related(selected) : null;
   svg.classed("focus", !!selected);
   gNodes.selectAll(".node").attr("display", d => !d.hub && hidden.has(d.type) ? "none" : null).each(function (d) {
@@ -1248,7 +1370,7 @@ function renderPanel() {
     }).join("");
     const arrive = TECHS.filter(t => t.to === n.id);
     const nb = HUB_LINKS.filter(l => l.includes(n.id)).map(l => l[0] === n.id ? l[1] : l[0]);
-    panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span>Position · ${TIERS[n.tier]}</span></div>${spriteOf(n) ? `<div class="portrait has-sprite${active ? "" : " dim"}">${spriteImg(n.id)}</div>` : ""}<h2>${esc(n.name)}</h2>
+    panel.innerHTML = `<div class="kind"><span class="entry-no">${entryNo.get(n.id)}</span><span>Position · ${TIERS[n.tier]}</span></div>${spriteOf(n) ? `<div class="portrait has-sprite${active ? "" : " dim"}">${spriteImg(n.id)}</div>` : ""}<h2>${esc(n.name)}</h2><button class="mapfrom" data-mapfrom="${n.id}">Map from here ›</button>
       ${sided ? `<div class="sidetabs" role="tablist">${["bottom", "top"].map(sd => `<button role="tab" data-tabside="${sd}" aria-selected="${cur === sd}">${sideLabel(n.id, sd)}</button>`).join("")}</div>` : ""}
       <div class="stagebox"><div class="stagehead"><b>${cur ? sideLabel(n.id, cur) + " scorecard" : "Scorecard"}</b><span class="status">moves at Hit or better</span></div>
       <div class="score">${rows.map(srow).join("")}</div>
@@ -1271,6 +1393,7 @@ function renderPanel() {
         ? `<div class="portrait has-sprite t-${n.type}${s ? "" : " dim"}">${spriteImg(spriteOf(n))}<svg class="badge" width="22" height="22" viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d3.symbol(TYPES[n.type].sym, 120)()}" fill="currentColor"/></svg><span class="from">From ${esc(hubById.get(spriteOf(n)).name)}${n.to ? ` → ${esc(hubById.get(n.to).name)}` : ""}</span></div>`
         : `<div class="portrait t-${n.type}${s ? "" : " dim"}"><svg width="96" height="96" viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="3 5"/><path d="${d3.symbol(TYPES[n.type].sym, 900)()}" fill="currentColor"/></svg></div>`}
       <h2>${esc(n.name)}</h2><p>${esc(n.note)}</p>
+      <button class="mapfrom" data-mapfrom="${n.id}">Map from here ›</button>
       <div class="stagebox">
         <div class="stagehead"><b>${STAGES[s]}</b>${pips(s)}</div>
         <p class="next">${nextStep(n.id)}</p>
@@ -1308,6 +1431,7 @@ function renderPanel() {
     const ct = panel.querySelector("#clearToday"); if (ct) ct.onclick = () => clearToday(n.id);
     panel.querySelector("#base").onchange = e => { const v = +e.target.value; if (v) data.base[n.id] = v; else delete data.base[n.id]; commit(); };
   }
+  panel.querySelectorAll("[data-mapfrom]").forEach(b => b.onclick = () => openFlow(b.dataset.mapfrom));
   panel.querySelectorAll("[data-tabside]").forEach(b => b.onclick = () => { hubSide = { id: n.id, side: b.dataset.tabside }; renderPanel(); });
   panel.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { select(b.dataset.go); if (view === "map" && !isPhone) focusOn(nodeById.get(b.dataset.go)); });
   panel.insertAdjacentHTML("afterbegin", `<div class="backbar"><button id="backBtn">‹ Back</button><span class="entry-no">${entryNo.get(n.id)}</span></div>`);
@@ -1505,7 +1629,6 @@ function setView(v) {
   const f = document.getElementById("filters");
   if (isPhone) dexEl.querySelector(".listhead").appendChild(f);
   else document.querySelector("header .search").before(f);
-  if (v === "map" && !fitted) { isPhone ? fitPhone() : fit(); fitted = true; }
   refresh();
   if (v === "map" && selected && !isPhone) focusOn(nodeById.get(selected));
 }
