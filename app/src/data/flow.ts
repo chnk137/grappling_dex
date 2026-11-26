@@ -19,6 +19,7 @@ export const startSide = (posId: string): Side | null => (hasSides(posId) ? main
  */
 export function landingSide(t: Technique): Side | null {
   if (!t.to || !hasSides(t.to)) return null;
+  if (t.lands) return t.lands;
   const tier = positionById.get(t.to)?.tier;
   if (t.type === 'escape' || tier === 'guard' || tier === 'leg') return 'bottom';
   return 'top';

@@ -7,7 +7,8 @@ export type Tier = 'stand' | 'guard' | 'leg' | 'pass' | 'pin' | 'dom';
 export interface Position { id: string; name: string; tier: Tier; x: number; y: number }
 export type Side = 'bottom' | 'top';
 /** `sides` lists the attacker's side at a position where it differs from the rule in attackSides. */
-export interface Technique { id: string; name: string; type: MoveType; from: string[]; to: string | null; note: string; gi: boolean; sides?: Record<string, Side[]> }
+/** `lands`: the side you end up on, where it differs from the rule in flow.ts landingSide. */
+export interface Technique { id: string; name: string; type: MoveType; from: string[]; to: string | null; note: string; gi: boolean; sides?: Record<string, Side[]>; lands?: Side }
 
 export const TYPES: Record<MoveType, { label: string; plural: string }> = {
   sub: { label: 'Submission', plural: 'Submissions' },

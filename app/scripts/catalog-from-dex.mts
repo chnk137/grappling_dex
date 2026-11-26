@@ -8,7 +8,7 @@ const end = html.indexOf('const entryNo');
 if (start < 0 || end < 0) throw new Error('Could not find the catalog in grappling-dex.html');
 const d3 = new Proxy({}, { get: () => null }); // TYPES uses d3 symbols; not needed here
 const src = html.slice(html.indexOf('const TIERS'), end);
-const { HUBS, HUB_LINKS, TECHS, CHAINS, TIERS, SIDES, MERGED } = new Function('d3', `${src}; return { HUBS, HUB_LINKS, TECHS, CHAINS, TIERS, SIDES, MERGED };`)(d3);
+const { HUBS, HUB_LINKS, TECHS, CHAINS, TIERS, SIDES, MERGED, LANDS } = new Function('d3', `${src}; return { HUBS, HUB_LINKS, TECHS, CHAINS, TIERS, SIDES, MERGED, LANDS };`)(d3);
 
 // Sanity checks: ids are unique across positions and moves, and every reference exists.
 const ids = new Set<string>();
@@ -28,6 +28,10 @@ for (const [moveId, byPos] of Object.entries(SIDES as Record<string, Record<stri
     if (!sides.length || sides.some(x => x !== 'top' && x !== 'bottom')) throw new Error(`SIDES: bad sides for ${moveId}@${pos}`);
   }
 }
+for (const [moveId, side] of Object.entries(LANDS as Record<string, string>)) {
+  const t = TECHS.find((x: { id: string }) => x.id === moveId);
+  if (!t || !t.to || (side !== 'top' && side !== 'bottom')) throw new Error(`LANDS: bad entry ${moveId}`);
+}
 for (const [old, m] of Object.entries(MERGED as Record<string, { into: string }>)) {
   if (hubIds.has(old)) throw new Error(`MERGED position ${old} still exists`);
   if (!hubIds.has(m.into)) throw new Error(`MERGED into unknown position ${m.into}`);
@@ -38,7 +42,7 @@ const catalog = {
   version: 1,
   positions: HUBS.map(({ id, name, tier, x, y }: Record<string, unknown>) => ({ id, name, tier, x, y })),
   positionLinks: HUB_LINKS,
-  techniques: TECHS.map(({ id, name, type, from, to, note, gi }: Record<string, unknown>) => ({ id, name, type, from, to, note, gi, ...(SIDES[id as string] ? { sides: SIDES[id as string] } : {}) })),
+  techniques: TECHS.map(({ id, name, type, from, to, note, gi }: Record<string, unknown>) => ({ id, name, type, from, to, note, gi, ...(SIDES[id as string] ? { sides: SIDES[id as string] } : {}), ...(LANDS[id as string] ? { lands: LANDS[id as string] } : {}) })),
   merged: MERGED,
   chains: CHAINS,
 };

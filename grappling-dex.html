@@ -494,7 +494,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 22</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 23</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -631,8 +631,8 @@ const TECHS = [
   ["collarSleeveSweep","Collar-sleeve sweep","sweep",["collar"],"standing","Push the knee, pull the sleeve.",true],
   ["fiftySweep","50-50 sweep","sweep",["fifty"],"side","Pull their leg and come up on top."],
 
-  ["toreando","Toreando pass","pass",["dlr","spider","lasso","butterfly"],"side","Grip the pants and redirect the legs."],
-  ["kneeSlice","Knee slice","pass",["half","kneeShield","dlr","butterfly","hq"],"side","Cut the knee through with an underhook or crossface."],
+  ["toreando","Toreando pass","pass",["dlr","spider","lasso","butterfly","collar","shin"],"side","Grip the pants and redirect the legs."],
+  ["kneeSlice","Knee slice","pass",["half","kneeShield","dlr","butterfly","hq","collar"],"side","Cut the knee through with an underhook or crossface."],
   ["legDrag","Leg drag","pass",["dlr","rdlr","hq"],"side","Pin the legs to one side. Chains to the back."],
   ["overUnder","Over-under pass","pass",["closed","butterfly"],"side","Pressure pass. Stack and walk around."],
   ["doubleUnder","Double under pass","pass",["closed"],"side","Stack them and pass around a leg."],
@@ -642,13 +642,13 @@ const TECHS = [
   ["stackPass","Stack pass","pass",["closed","spider","lasso"],"side","Also counters the triangle."],
   ["floatPass","Float pass","pass",["half"],"side","Flatten them and float your hips free."],
   ["mountPass","Mount pass","pass",["half"],"mount","Slide the knee through to mount."],
-  ["backstep","Backstep","pass",["half","rdlr"],"saddle","Turn away into a leg entanglement or side control."],
+  ["backstep","Backstep","pass",["half","rdlr","deepHalf"],"saddle","Turn away into a leg entanglement or side control."],
 
   ["armDrag","Arm drag","move",["closed","butterfly","standing"],"back","Drag the arm across and climb to the back."],
   ["berimbolo","Berimbolo","move",["dlr"],"back","Invert under them to take the back."],
   ["kissDragon","Kiss of the dragon","move",["dlr","rdlr"],"back","Inverted back take."],
   ["matrix","Matrix","move",["kguard"],"back","Back take from K-guard."],
-  ["dogfight","Dogfight back take","move",["half"],"back","Come up on the underhook, go behind."],
+  ["dogfight","Dogfight back take","move",["half","kneeShield"],"back","Come up on the underhook, go behind."],
   ["giftWrap","Gift wrap","move",["mount"],"back","Wrap their arm around their neck, roll to the back."],
   ["seatbelt","Seatbelt and hooks","move",["turtle"],"back","Get the seatbelt grip, then the hooks."],
   ["backDoor","Back door","move",["deepHalf"],"back","Escape out the back of deep half."],
@@ -658,7 +658,7 @@ const TECHS = [
   ["osoto","Osoto gari","move",["standing"],"side","Judo reap."],
   ["snapDown","Snap down","move",["standing"],"frontHeadlock","Front headlock, then go behind or choke."],
 
-  ["upa","Upa (bridge and roll)","escape",["mount","side","kesa"],null,"Trap an arm and leg, bridge over. You end on top."],
+  ["upa","Upa (bridge and roll)","escape",["mount","side","kesa"],"closed","Trap an arm and leg, bridge over. You end on top."],
   ["elbowKnee","Elbow-knee escape","escape",["mount"],"half","Shrimp to half or full guard."],
   ["heelDrag","Heel drag escape","escape",["mount"],"half","Drag your heel free to half guard."],
   ["shrimp","Shrimp to guard","escape",["side","kob"],"closed","Frame, hip out, knee in."],
@@ -697,11 +697,35 @@ const TECHS = [
   ["nsEscape","North-south turn-in","escape",["ns"],"half","Frame on their hips, walk your feet away and turn in to face them."],
   ["crucifixEscape","Crucifix escape","escape",["crucifix"],"turtle","Turn into them and pull the trapped elbow back under before they lock the arm."],
   ["fhlEscape","Front headlock escape","escape",["frontHeadlock"],"standing","Clear the wrist off your neck, circle away from the choking arm and pop your head out."],
-  ["kneeLine","Clear the knee line","escape",["saddle","outsideAshi","slx","crossAshi"],null,"Hide the heel and turn your knee so their legs can't stay past it, then free the foot."],
-  ["fiftyEscape","50-50 escape","escape",["fifty","backside50"],null,"Hide your heel, clear their outside leg and stand or backstep out."],
+  ["kneeLine","Clear the knee line","escape",["saddle","outsideAshi","slx","crossAshi"],"standing","Hide the heel and turn your knee so their legs can't stay past it, then free the foot."],
+  ["fiftyEscape","50-50 escape","escape",["fifty","backside50"],"standing","Hide your heel, clear their outside leg and stand or backstep out."],
   ["shinFrame","Shin frame retention","escape",["half","kneeShield","dlr","butterfly","spider","lasso","shin"],null,"Slide a shin across their hips to keep them off your chest and square back up to guard."],
   ["inversion","Inversion recovery","escape",["dlr","rdlr","spider","butterfly","xguard"],null,"Roll onto your shoulders to swing your legs back in front of them before the pass finishes."],
-  ["reguard","Re-guard","escape",["hq","bodyLockTop","legDragTop"],"half","Pass half done: frame on head and hip, shrimp away and pummel a knee back in."]
+  ["reguard","Re-guard","escape",["hq","bodyLockTop","legDragTop"],"half","Pass half done: frame on head and hip, shrimp away and pummel a knee back in."],
+  ["stepMount","Step over to mount","move",["side"],"mount","Slide the knee across their belly and step over."],
+  ["kobSwitch","Knee on belly","move",["side"],"kob","Pop up and drive a knee across their belly."],
+  ["nsWalk","Walk to north-south","move",["side"],"ns","Keep chest pressure and walk around their head."],
+  ["kesaSwitch","Switch to kesa gatame","move",["side"],"kesa","Sit through to the scarf hold, clamping head and arm."],
+  ["kobMount","Knee on belly to mount","move",["kob"],"mount","When they push the knee, slide it across into mount."],
+  ["nsSide","Circle back to side control","move",["ns"],"side","Walk back around to side control as they turn."],
+  ["kesaMount","Kesa to mount","move",["kesa"],"mount","Trap the near arm and swing a leg over into mount."],
+  ["sMountClimb","Climb to S-mount","move",["mount"],"sMount","Walk the knees up under their arms and post a foot by their head."],
+  ["techMountShift","Technical mount","move",["mount"],"techMount","As they turn, drop a knee behind their back and post the other leg."],
+  ["sMountBack","S-mount to back","move",["sMount"],"back","If they turn away from the armbar, slide in behind and take the back."],
+  ["techMountBack","Technical mount back take","move",["techMount"],"back","Follow their turn, seatbelt and put the hooks in."],
+  ["backToMount","Back to mount","move",["back"],"mount","When they escape to their back, swing over to mount."],
+  ["crucifixBack","Crucifix to back","move",["crucifix"],"back","Release the arm trap and roll to back control with hooks."],
+  ["truckBack","Truck back take","move",["truck"],"back","Hold the leg, roll through and come up on the back."],
+  ["crucifixEntry","Crucifix entry","move",["turtle"],"crucifix","Trap the near arm between your legs from the turtle ride."],
+  ["truckEntry","Truck entry","move",["turtle"],"truck","Lock the far leg from the turtle and roll to the truck."],
+  ["truckEscape","Truck escape","escape",["truck"],"turtle","Free the trapped leg and turn back into them before they roll."],
+  ["crabEscape","Crab ride escape","escape",["crabRide"],"half","Hide the hips, clear the hook and square back up to guard."],
+  ["ashiSaddle","Outside ashi to saddle","move",["outsideAshi"],"saddle","Swing the outside leg across into inside sankaku."],
+  ["crossToSaddle","Cross ashi to saddle","move",["crossAshi"],"saddle","Rotate so both legs end up inside their leg."],
+  ["saddleBack50","Follow to back-side 50-50","move",["saddle"],"backside50","When they turn to escape, keep the legs and follow them."],
+  ["fiftyBackside","50-50 to back-side 50-50","move",["fifty"],"backside50","They turn to hide the heel; follow them around."],
+  ["back50Back","Back take from back-side 50-50","move",["backside50"],"back","Climb their legs to the back as they turn away."],
+  ["collarDlr","Collar-sleeve to De La Riva","move",["collar"],"dlr","Hook the near leg from the outside and switch to DLR."]
 ].map(([id,name,type,from,to,note,gi]) => ({ id, name, type, from, to, note, gi: !!gi, hub: false }));
 
 const hubById = new Map(HUBS.map(h => [h.id, h]));
@@ -726,6 +750,9 @@ const SIDES = {
   armTriangle: { half: ["top"] }, toeHold: { half: ["top"] }, estima: { half: ["top"] }, calfSlicer: { half: ["top"] },
   buggy: { side: ["bottom"] }
 };
+// Where a move leaves you on the other side from the usual rule (see landingSide):
+// the upa is an escape but leaves you on top, in their guard.
+const LANDS = { upa: "top" };
 // Positions folded into another one, so older logs move with them. Logs from Top half
 // guard now count for the top side of half guard.
 const MERGED = { topHalf: { into: "half", side: "top" } };
@@ -1053,6 +1080,7 @@ const stepLabel = st => st.side && hasSides(st.id) ? `${hubById.get(st.id).name}
 // leave you underneath; sweeps, passes and takedowns leave you on top.
 function landingSide(t) {
   if (!t.to || !hasSides(t.to)) return null;
+  if (LANDS[t.id]) return LANDS[t.id];
   const tier = hubById.get(t.to).tier;
   return t.type === "escape" || tier === "guard" || tier === "leg" ? "bottom" : "top";
 }

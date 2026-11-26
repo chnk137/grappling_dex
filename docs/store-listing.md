@@ -21,7 +21,7 @@ Grappling Dex turns your Brazilian jiu-jitsu training into a collection you fill
 
 After class, log what you worked on in a few taps: what you were taught, what you drilled and what you landed in live rolling. Every move climbs through four stages, from Seen to Drilled, then Hit and finally Mastered, so you can see at a glance which techniques actually work for you under resistance.
 
-• 119 techniques across 39 positions, including newer guards like shin-to-shin, K-guard and waiter, with leg locks broken out by entry
+• 143 techniques across 39 positions, including newer guards like shin-to-shin, K-guard and waiter, with leg locks broken out by entry
 • Every move links to the positions it works from, the moves it chains into, and related techniques
 • Log where each move came from, so a triangle from closed guard counts for closed guard, not every position it can start from
 • A scorecard for each position: what you can attack, pass, escape and sweep from there
