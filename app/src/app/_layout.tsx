@@ -18,7 +18,6 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="entry/[id]" options={{ title: '', headerBackTitle: 'Back' }} />
-        <Stack.Screen name="flow/[id]" options={{ title: '', headerBackTitle: 'Back' }} />
         <Stack.Screen name="log" options={{ presentation: 'modal', title: 'Log a session' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy policy', headerBackTitle: 'Back' }} />
       </Stack>

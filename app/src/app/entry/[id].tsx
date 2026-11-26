@@ -2,10 +2,11 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlowList } from '../../components/FlowList';
 import { Bar, Button, Chips, Pips, SectionLabel, TypeIcon } from '../../components/ui';
 import {
   attackSides, combos, flipSide, logOptions, entryNo, hasSides, mainSide, positionActive, positionById, positionLinks, positionRecord, relatedMoves, scorecard,
-  sideLabel, techniqueById, techniques, TIERS, TYPES, type MoveType, type Side, type Technique,
+  sideLabel, techniqueById, techniques, TIERS, TYPES, type Side, type Technique,
 } from '../../data/catalog';
 import {
   ago, describeItem, isRusty, KIND_LABEL, RUSTY_DAYS, KIND_LONG, lastPosition, liveRecord, localDate, nextStep, posStats, RULES, splitKey, stats, STAGES, derivedStage,
@@ -23,7 +24,7 @@ export default function EntryScreen() {
     <>
       <Stack.Screen options={{ title: entryNo.get(id) ?? '' }} />
       <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.body}>
-        {move ? <MoveEntry t={move} /> : pos ? <PositionEntry id={pos.id} side={side === 'top' || side === 'bottom' ? side : undefined} /> : <Text style={styles.muted}>{"This entry doesn't exist."}</Text>}
+        {move ? <MoveEntry t={move} /> : pos ? <PositionEntry key={`${pos.id}:${side ?? ''}`} id={pos.id} side={side === 'top' || side === 'bottom' ? side : undefined} /> : <Text style={styles.muted}>{"This entry doesn't exist."}</Text>}
       </ScrollView>
     </>
   );
@@ -86,7 +87,7 @@ function MoveEntry({ t }: { t: Technique }) {
       )}
       <Text style={styles.h1}>{t.name}</Text>
       <Text style={styles.note}>{t.note}</Text>
-      <Button label="Map from here ›" kind="outline" onPress={() => router.push({ pathname: '/flow/[id]', params: { id: t.id } })} />
+      <Button label="See it on the map ›" kind="outline" onPress={() => router.navigate({ pathname: '/map', params: { start: lastPosition(progress, t.id) ?? t.from[0], focus: t.id } })} />
 
       <View style={styles.box}>
         <View style={styles.boxHead}><Text style={styles.stage}>{STAGES[s]}</Text><Pips stage={s} /></View>
@@ -208,7 +209,6 @@ function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
   const active = positionActive(progress, id);
   const arrive = techniques.filter(t => t.to === id).map(t => t.id);
   const neighbours = positionLinks.filter(l => l.includes(id)).map(l => (l[0] === id ? l[1] : l[0]));
-  const onSide = (t: Technique) => !cur || attackSides(t, id).includes(cur);
 
   return (
     <>
@@ -222,7 +222,7 @@ function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
         </View>
       )}
       <Text style={styles.h1}>{p.name}</Text>
-      <Button label="Map from here ›" kind="outline" onPress={() => router.push({ pathname: '/flow/[id]', params: { id, ...(cur ? { side: cur } : {}) } })} />
+      <Button label="Map from here ›" kind="outline" onPress={() => router.navigate({ pathname: '/map', params: { start: id, ...(cur ? { side: cur } : {}) } })} />
       {sided && (
         <View style={styles.tabs} accessibilityRole="tablist">
           {(['bottom', 'top'] as Side[]).map(sd => (
@@ -242,10 +242,7 @@ function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
         <LiveBars rec={rec} empty={cur ? `Nothing logged from the ${sideLabel(id, cur).toLowerCase()} side yet.` : 'No live rolls logged here yet.'} />
         {waysIn && <><SectionLabel>Getting here</SectionLabel><Bar label="Ways in" value={waysIn.have} max={waysIn.total} right={`${waysIn.have}/${waysIn.total}`} /></>}
       </View>
-      {(Object.keys(TYPES) as MoveType[]).map(k => {
-        const ids = techniques.filter(t => t.type === k && t.from.includes(id) && onSide(t)).map(t => t.id);
-        return ids.length ? <View key={k} style={{ gap: space.sm }}><SectionLabel>{`${TYPES[k].plural} from here${cur ? ` · ${sideLabel(id, cur)}` : ''} (${ids.length})`}</SectionLabel><Chips ids={ids} at={id} /></View> : null;
-      })}
+      <FlowList posId={id} side={cur ?? null} />
       {arrive.length > 0 && <><SectionLabel>{`Ways to get here (${arrive.length})`}</SectionLabel><Chips ids={arrive} /></>}
       {neighbours.length > 0 && <><SectionLabel>Connected positions</SectionLabel><Chips ids={neighbours} /></>}
     </>
