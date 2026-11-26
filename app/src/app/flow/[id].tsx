@@ -6,12 +6,12 @@ import { colors } from '../../theme';
 
 /** "Map from here", opened from a dex entry. */
 export default function FlowScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, side } = useLocalSearchParams<{ id: string; side?: string }>();
   const router = useRouter();
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Stack.Screen options={{ title: `From ${nameOf(id)}` }} />
-      <FlowView startId={id} onOpenEntry={e => router.push({ pathname: '/entry/[id]', params: { id: e } })} />
+      <FlowView startId={id} startSide={side === 'top' || side === 'bottom' ? side : undefined} onOpenEntry={e => router.push({ pathname: '/entry/[id]', params: { id: e } })} />
     </View>
   );
 }

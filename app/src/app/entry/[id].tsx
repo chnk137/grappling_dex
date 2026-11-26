@@ -222,7 +222,7 @@ function PositionEntry({ id, side: startSide }: { id: string; side?: Side }) {
         </View>
       )}
       <Text style={styles.h1}>{p.name}</Text>
-      <Button label="Map from here ›" kind="outline" onPress={() => router.push({ pathname: '/flow/[id]', params: { id } })} />
+      <Button label="Map from here ›" kind="outline" onPress={() => router.push({ pathname: '/flow/[id]', params: { id, ...(cur ? { side: cur } : {}) } })} />
       {sided && (
         <View style={styles.tabs} accessibilityRole="tablist">
           {(['bottom', 'top'] as Side[]).map(sd => (

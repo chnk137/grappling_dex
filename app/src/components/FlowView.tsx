@@ -1,40 +1,52 @@
-// "Map from here": a left-to-right flow from one dex entry instead of the whole web.
-// A position shows its moves by type; each move either finishes there (🏁) or leaves
-// you in another position, which you can open inline (step 3) or start from.
+// "Map from here": a focused flow from one dex entry instead of the whole web.
+// A position is shown from one side (bottom or top): the moves you attack with from
+// there, grouped by type; each either finishes there (🏁) or leaves you somewhere
+// (and on a side), which you can open inline (step 3) or start from.
 import * as Haptics from 'expo-haptics';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
-import { isPosition, nameOf, positionById, techniqueById, TIERS, TYPES } from '../data/catalog';
-import { destinationsOf, flowFrom, startsFrom, type Destination, type FlowMove } from '../data/flow';
+import { hasSides, isPosition, nameOf, positionById, sideLabel, techniqueById, TIERS, TYPES, type Side } from '../data/catalog';
+import { destinationsOf, flowFrom, landingSide, startSide, startsFrom, type Destination, type FlowMove } from '../data/flow';
 import { posStage, stageOf } from '../lib/progress';
 import { useProgress } from '../lib/store';
 import { colors, radius, space } from '../theme';
 import { Pips, SectionLabel, TypeIcon } from './ui';
 
-export function FlowView({ startId, onOpenEntry, header }: { startId: string; onOpenEntry: (id: string) => void; header?: React.ReactNode }) {
-  const [trail, setTrail] = useState<string[]>([startId]);
+/** A step in the flow: an entry, and for positions the side you're on. */
+type Step = { id: string; side: Side | null };
+const stepOf = (id: string, side?: Side | null): Step => ({ id, side: isPosition(id) ? (side !== undefined ? side : startSide(id)) : null });
+const label = (s: Step) => (s.side && hasSides(s.id) ? `${nameOf(s.id)} (${sideLabel(s.id, s.side).toLowerCase()})` : nameOf(s.id));
+const same = (a: Step, b: Step) => a.id === b.id && a.side === b.side;
+
+export function FlowView({ startId, startSide: firstSide, onOpenEntry }: { startId: string; startSide?: Side | null; onOpenEntry: (id: string) => void }) {
+  const [trail, setTrail] = useState<Step[]>([stepOf(startId, firstSide)]);
   const [mine, setMine] = useState(false);
   const [open, setOpen] = useState<string | null>(null); // destination expanded inline
   // Starting somewhere new (e.g. another entry's "Map from here") resets the trail.
   const [lastStart, setLastStart] = useState(startId);
-  if (startId !== lastStart) { setLastStart(startId); setTrail([startId]); setOpen(null); }
+  if (startId !== lastStart) { setLastStart(startId); setTrail([stepOf(startId, firstSide)]); setOpen(null); }
 
   const root = trail[trail.length - 1];
   const scroller = useRef<ScrollViewInstance>(null);
   const top = () => scroller.current?.scrollTo({ y: 0, animated: false });
-  const go = (id: string) => { Haptics.selectionAsync(); setTrail(t => [...t.filter(x => x !== id), id]); setOpen(null); top(); };
+  const go = (id: string, side?: Side | null) => {
+    Haptics.selectionAsync();
+    const s = stepOf(id, side);
+    setTrail(t => [...t.filter(x => !same(x, s)), s]); setOpen(null); top();
+  };
   const back = (i: number) => { setTrail(t => t.slice(0, i + 1)); setOpen(null); top(); };
+  // Flipping sides swaps the current step rather than adding one to the trail.
+  const flip = (side: Side) => { setTrail(t => [...t.slice(0, -1), { ...root, side }]); setOpen(null); };
 
   return (
     <ScrollView ref={scroller} contentContainerStyle={styles.body}>
-      {header}
       {trail.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trail}>
-          {trail.map((id, i) => (
-            <View key={id} style={styles.crumbWrap}>
+          {trail.map((s, i) => (
+            <View key={`${s.id}:${s.side}`} style={styles.crumbWrap}>
               {i > 0 && <Text style={styles.crumbSep}>›</Text>}
-              <Pressable onPress={() => back(i)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Back to ${nameOf(id)}`}>
-                <Text style={[styles.crumb, i === trail.length - 1 && styles.crumbOn]}>{nameOf(id)}</Text>
+              <Pressable onPress={() => back(i)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Back to ${label(s)}`}>
+                <Text style={[styles.crumb, i === trail.length - 1 && styles.crumbOn]}>{label(s)}</Text>
               </Pressable>
             </View>
           ))}
@@ -46,26 +58,39 @@ export function FlowView({ startId, onOpenEntry, header }: { startId: string; on
         </Pressable>
         <Text style={styles.small}>{mine ? 'Only moves you’ve logged' : 'Everything in the dex'}</Text>
       </View>
-      {isPosition(root)
-        ? <PositionFlow id={root} mine={mine} open={open} setOpen={setOpen} go={go} onOpenEntry={onOpenEntry} />
-        : <MoveFlow id={root} mine={mine} open={open} setOpen={setOpen} go={go} onOpenEntry={onOpenEntry} />}
+      {isPosition(root.id)
+        ? <PositionFlow step={root} mine={mine} open={open} setOpen={setOpen} go={go} flip={flip} onOpenEntry={onOpenEntry} />
+        : <MoveFlow step={root} mine={mine} open={open} setOpen={setOpen} go={go} flip={flip} onOpenEntry={onOpenEntry} />}
     </ScrollView>
   );
 }
 
-type FlowProps = { id: string; mine: boolean; open: string | null; setOpen: (id: string | null) => void; go: (id: string) => void; onOpenEntry: (id: string) => void };
+type FlowProps = {
+  step: Step; mine: boolean; open: string | null; setOpen: (k: string | null) => void;
+  go: (id: string, side?: Side | null) => void; flip: (side: Side) => void; onOpenEntry: (id: string) => void;
+};
 
-function PositionFlow({ id, mine, open, setOpen, go, onOpenEntry }: FlowProps) {
+function PositionFlow({ step, mine, open, setOpen, go, flip, onOpenEntry }: FlowProps) {
   const { progress } = useProgress();
+  const id = step.id;
   const p = positionById.get(id)!;
   const st = (m: FlowMove) => posStage(progress, m.t.id, id);
-  const groups = flowFrom(id).map(g => ({ ...g, moves: mine ? g.moves.filter(m => st(m) >= 1) : g.moves })).filter(g => g.moves.length);
+  const groups = flowFrom(id, step.side).map(g => ({ ...g, moves: mine ? g.moves.filter(m => st(m) >= 1) : g.moves })).filter(g => g.moves.length);
   const dests = destinationsOf(groups.flatMap(g => g.moves));
 
   return (
     <>
-      <RootCard kind={`Position · ${TIERS[p.tier]}`} name={p.name} onOpen={() => onOpenEntry(id)} />
-      {!groups.length && <Text style={styles.muted}>Nothing logged from here yet. Turn off “My game only” to see every move.</Text>}
+      <RootCard kind={step.side ? 'Position' : `Position · ${TIERS[p.tier]}`} name={p.name} onOpen={() => onOpenEntry(id)} />
+      {step.side && (
+        <View style={styles.sides} accessibilityRole="tablist">
+          {(['bottom', 'top'] as Side[]).map(sd => (
+            <Pressable key={sd} onPress={() => flip(sd)} style={[styles.sideBtn, step.side === sd && styles.sideOn]} accessibilityRole="tab" accessibilityState={{ selected: step.side === sd }}>
+              <Text style={[styles.sideText, step.side === sd && { color: colors.bg }]}>{sideLabel(id, sd)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {!groups.length && <Text style={styles.muted}>{mine ? 'Nothing logged from this side yet. Turn off “My game only” to see every move.' : 'No moves from this side in the dex yet.'}</Text>}
       {groups.map(g => (
         <View key={g.type} style={styles.group}>
           <SectionLabel>{`${g.label} (${g.moves.length})${g.moves.every(m => !m.to) ? ' · 🏁 finish here' : ''}`}</SectionLabel>
@@ -88,8 +113,8 @@ function PositionFlow({ id, mine, open, setOpen, go, onOpenEntry }: FlowProps) {
                 <Pips stage={st(m)} />
               </Pressable>
               {m.to
-                ? <Pressable onPress={() => go(m.to!.id)} style={({ pressed }) => [styles.dest, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel={`Leads to ${m.to.name}`}>
-                    <Text style={styles.arrow}>→</Text><Text style={styles.destText} numberOfLines={1}>{m.to.name}</Text>
+                ? <Pressable onPress={() => go(m.to!.id, m.toSide)} style={({ pressed }) => [styles.dest, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel={`Leads to ${label({ id: m.to.id, side: m.toSide })}`}>
+                    <Text style={styles.arrow}>→</Text><Text style={styles.destText} numberOfLines={2}>{m.to.name}</Text>
                   </Pressable>
                 : m.t.type === 'sub'
                   ? <Text style={styles.finish} accessibilityLabel="Finishes here">🏁</Text>
@@ -101,30 +126,34 @@ function PositionFlow({ id, mine, open, setOpen, go, onOpenEntry }: FlowProps) {
       {dests.length > 0 && (
         <View style={styles.group}>
           <SectionLabel>Where these lead</SectionLabel>
-          {dests.map(d => <DestRow key={d.pos.id} d={d} mine={mine} open={open === d.pos.id} toggle={() => setOpen(open === d.pos.id ? null : d.pos.id)} go={go} />)}
+          {dests.map(d => {
+            const k = `${d.pos.id}:${d.side}`;
+            return <DestRow key={k} d={d} mine={mine} open={open === k} toggle={() => setOpen(open === k ? null : k)} go={go} />;
+          })}
         </View>
       )}
     </>
   );
 }
 
-function MoveFlow({ id, mine, open, setOpen, go, onOpenEntry }: FlowProps) {
+function MoveFlow({ step, mine, open, setOpen, go, onOpenEntry }: FlowProps) {
   const { progress } = useProgress();
+  const id = step.id;
   const t = techniqueById.get(id)!;
-  const from = startsFrom(t).filter(p => !mine || posStage(progress, id, p.id) >= 1);
+  const from = startsFrom(t).filter(f => !mine || posStage(progress, id, f.pos.id) >= 1);
   const to = t.to ? positionById.get(t.to) : null;
-  const d: Destination | null = to ? destinationsOf([{ t, side: null, to }])[0] : null;
+  const d: Destination | null = to ? { pos: to, side: landingSide(t), via: [t] } : null;
   return (
     <>
       <RootCard kind={TYPES[t.type].label} name={t.name} stage={stageOf(progress, id)} onOpen={() => onOpenEntry(id)} icon={<TypeIcon type={t.type} size={14} />} />
       <View style={styles.group}>
         <SectionLabel>{`Starts from (${from.length})`}</SectionLabel>
         {!from.length && <Text style={styles.muted}>Not logged from any position yet.</Text>}
-        {from.map(p => (
-          <Pressable key={p.id} onPress={() => go(p.id)} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel={`${p.name}, start from here`}>
+        {from.map(f => (
+          <Pressable key={`${f.pos.id}:${f.side}`} onPress={() => go(f.pos.id, f.side)} style={({ pressed }) => [styles.row, styles.rowMain, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel={`${label({ id: f.pos.id, side: f.side })}, start from here`}>
             <TypeIcon type="position" size={12} />
-            <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
-            <Pips stage={posStage(progress, id, p.id)} />
+            <Text style={styles.name} numberOfLines={1}>{label({ id: f.pos.id, side: f.side })}</Text>
+            <Pips stage={posStage(progress, id, f.pos.id)} />
             <Text style={styles.arrow}>›</Text>
           </Pressable>
         ))}
@@ -138,18 +167,19 @@ function MoveFlow({ id, mine, open, setOpen, go, onOpenEntry }: FlowProps) {
   );
 }
 
-/** A position you end up in: tap the name to start from it, the arrow to see its moves here (step 3). */
-function DestRow({ d, mine, open, toggle, go }: { d: Destination; mine: boolean; open: boolean; toggle: () => void; go: (id: string) => void }) {
+/** Where you end up (and on which side): tap the name to start from there, the button to see its moves (step 3). */
+function DestRow({ d, mine, open, toggle, go }: { d: Destination; mine: boolean; open: boolean; toggle: () => void; go: (id: string, side?: Side | null) => void }) {
   const { progress } = useProgress();
-  const moves = flowFrom(d.pos.id).flatMap(g => g.moves).filter(m => !mine || posStage(progress, m.t.id, d.pos.id) >= 1);
+  const moves = flowFrom(d.pos.id, d.side).flatMap(g => g.moves).filter(m => !mine || posStage(progress, m.t.id, d.pos.id) >= 1);
+  const name = label({ id: d.pos.id, side: d.side });
   return (
     <View style={styles.destCard}>
       <View style={styles.destHead}>
-        <Pressable onPress={() => go(d.pos.id)} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`${d.pos.name}, start from here`}>
-          <Text style={styles.destName}>{d.pos.name}</Text>
+        <Pressable onPress={() => go(d.pos.id, d.side)} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`${name}, start from here`}>
+          <Text style={styles.destName}>{name}</Text>
           <Text style={styles.small} numberOfLines={2}>via {d.via.map(t => t.name).join(', ')}</Text>
         </Pressable>
-        <Pressable onPress={toggle} hitSlop={8} style={styles.expand} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${open ? 'Hide' : 'Show'} ${moves.length} moves from ${d.pos.name}`}>
+        <Pressable onPress={toggle} hitSlop={8} style={styles.expand} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${open ? 'Hide' : 'Show'} ${moves.length} moves from ${name}`}>
           <Text style={styles.expandText}>{`${moves.length} moves ${open ? '▾' : '▸'}`}</Text>
         </Pressable>
       </View>
@@ -194,6 +224,10 @@ const styles = StyleSheet.create({
   toggle: { minHeight: 34, paddingHorizontal: 12, borderRadius: 17, borderWidth: 1, borderColor: colors.brass, justifyContent: 'center' },
   toggleOn: { backgroundColor: colors.brass },
   toggleText: { color: colors.brass, fontSize: 13, fontWeight: '700' },
+  sides: { flexDirection: 'row', borderRadius: radius.sm + 2, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
+  sideBtn: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
+  sideOn: { backgroundColor: colors.brass },
+  sideText: { color: colors.ink, fontSize: 14, fontWeight: '700' },
   rootCard: { padding: space.md, gap: 6, borderRadius: radius.md, borderWidth: 1, borderColor: colors.brass, backgroundColor: colors.brassSoft },
   kind: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   rootHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },

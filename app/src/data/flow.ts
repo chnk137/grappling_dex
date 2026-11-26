@@ -1,40 +1,59 @@
-// "Map from here": what you can do from one position, and where it leads.
-// Step 1 = moves from the position, step 2 = positions those moves leave you in,
-// step 3 = moves from those positions (shown on demand).
-import { attackSides, hasSides, positionById, sideLabel, techniques, TYPES, type MoveType, type Position, type Side, type Technique } from './catalog';
+// "Map from here": what you can do from one side of a position, and where it leads.
+// Step 1 = moves from that side, step 2 = positions (and sides) those moves leave you in,
+// step 3 = moves from there (shown on demand).
+import { attackSides, hasSides, mainSide, positionById, techniques, TYPES, type MoveType, type Position, type Side, type Technique } from './catalog';
 
-export interface FlowMove { t: Technique; side: Side | null; to: Position | null }
+export interface FlowMove { t: Technique; to: Position | null; toSide: Side | null }
 export interface FlowGroup { type: MoveType; label: string; moves: FlowMove[] }
-export interface Destination { pos: Position; via: Technique[]; moves: number }
+export interface Destination { pos: Position; side: Side | null; via: Technique[] }
 
 // Moves that take you somewhere come first; submissions (which finish there) last.
 const ORDER: MoveType[] = ['sweep', 'pass', 'move', 'escape', 'sub'];
 
-/** Moves from a position, grouped by type, each with where it leaves you (null = it finishes there). */
-export function flowFrom(posId: string): FlowGroup[] {
-  return ORDER.map(type => {
-    const moves = techniques.filter(t => t.type === type && t.from.includes(posId)).map(t => ({
-      t, side: attackSides(t, posId)[0] ?? null, to: t.to ? positionById.get(t.to) ?? null : null,
-    }));
-    // A group that's all one side says so, e.g. "Guard passes · Top".
-    const sides = new Set(moves.map(m => m.side));
-    const one = sides.size === 1 ? [...sides][0] : null;
-    const label = TYPES[type].plural + (one && hasSides(posId) ? ` · ${sideLabel(posId, one)}` : '');
-    return { type, label, moves };
-  }).filter(g => g.moves.length);
+/** The side a position opens on in the flow (bottom for guards). Null when it has no sides. */
+export const startSide = (posId: string): Side | null => (hasSides(posId) ? mainSide(posId) : null);
+
+/**
+ * Which side you're on after a move: escapes and moves into guards or leg
+ * entanglements leave you underneath; sweeps, passes and takedowns leave you on top.
+ */
+export function landingSide(t: Technique): Side | null {
+  if (!t.to || !hasSides(t.to)) return null;
+  const tier = positionById.get(t.to)?.tier;
+  if (t.type === 'escape' || tier === 'guard' || tier === 'leg') return 'bottom';
+  return 'top';
 }
 
-/** The positions the given moves leave you in, with which moves get you there and how many moves each has. */
+/** Moves you can attack with from one side of a position (all of them when `side` is null), grouped by type. */
+export function flowFrom(posId: string, side: Side | null): FlowGroup[] {
+  return ORDER.map(type => ({
+    type,
+    label: TYPES[type].plural,
+    moves: techniques
+      .filter(t => t.type === type && t.from.includes(posId) && (!side || attackSides(t, posId).includes(side)))
+      .map(t => ({ t, to: t.to ? positionById.get(t.to) ?? null : null, toSide: landingSide(t) })),
+  })).filter(g => g.moves.length);
+}
+
+/** Where the given moves leave you, with which moves get you there. */
 export function destinationsOf(moves: FlowMove[]): Destination[] {
-  const byPos = new Map<string, Destination>();
+  const byKey = new Map<string, Destination>();
   for (const m of moves) {
     if (!m.to) continue;
-    const d = byPos.get(m.to.id) ?? { pos: m.to, via: [], moves: techniques.filter(t => t.from.includes(m.to!.id)).length };
+    const key = `${m.to.id}:${m.toSide ?? ''}`;
+    const d = byKey.get(key) ?? { pos: m.to, side: m.toSide, via: [] };
     d.via.push(m.t);
-    byPos.set(m.to.id, d);
+    byKey.set(key, d);
   }
-  return [...byPos.values()];
+  return [...byKey.values()];
 }
 
-/** For a move as the starting point: the positions it works from. */
-export const startsFrom = (t: Technique): Position[] => t.from.map(id => positionById.get(id)!).filter(Boolean);
+/** For a move as the starting point: each position (and side) it's attacked from. */
+export interface StartPoint { pos: Position; side: Side | null }
+export const startsFrom = (t: Technique): StartPoint[] =>
+  t.from.flatMap<StartPoint>(id => {
+    const pos = positionById.get(id);
+    if (!pos) return [];
+    const sides = attackSides(t, id);
+    return sides.length ? sides.map(side => ({ pos, side })) : [{ pos, side: null }];
+  });
