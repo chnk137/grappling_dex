@@ -93,7 +93,7 @@ function PositionFlow({ step, mine, open, setOpen, go, flip, onOpenEntry }: Flow
       {!groups.length && <Text style={styles.muted}>{mine ? 'Nothing logged from this side yet. Turn off “My game only” to see every move.' : 'No moves from this side in the dex yet.'}</Text>}
       {groups.map(g => (
         <View key={g.type} style={styles.group}>
-          <SectionLabel>{`${g.label} (${g.moves.length})${g.moves.every(m => !m.to) ? ' · 🏁 finish here' : ''}`}</SectionLabel>
+          <SectionLabel>{`${g.label} (${g.moves.length})${g.type === 'sub' && g.moves.every(m => !m.to) ? ' · 🏁 finish here' : ''}`}</SectionLabel>
           {/* Moves that all finish here are compact chips; ones that lead somewhere get a row with their arrow. */}
           {g.moves.every(m => !m.to) ? (
             <View style={styles.chips}>
