@@ -75,9 +75,10 @@ export default function MapScreen() {
   const home = useCallback((animate: boolean, box = size) => {
     if (!box) return;
     // Open far enough out to see where the moves lead (ring 2), not just the moves.
-    const k = clamp(Math.min(box.w, box.h) / (2 * (layout.r2 + 50)), 0.5, 1);
+    const extent = layout.nodes.some(n => n.kind === 'dest') ? layout.r2 + 50 : layout.r1 + 130;
+    const k = clamp(Math.min(box.w, box.h) / (2 * extent), 0.5, 1);
     sync(k, box.w / 2, box.h / 2 - 30, animate);
-  }, [size, layout.r2, sync]);
+  }, [size, layout, sync]);
   // A new start (or side) re-centres on it.
   useEffect(() => {
     const id = requestAnimationFrame(() => home(false));
@@ -278,7 +279,7 @@ const World = memo(function World({ layout, progress, sel, labels, rootName }: {
   const stageAt = (n: MapNode) => (n.t && n.at ? posStage(progress, n.t.id, n.at) : 0);
   // With a selection, light its path: a move and where it leads, a destination and its moves.
   const lit = (n: MapNode): boolean => {
-    if (!sel || n.key === sel.key || n.kind === 'root') return true;
+    if (!sel || sel.kind === 'root' || n.key === sel.key || n.kind === 'root') return true;
     if (sel.kind === 'move') return n.kind === 'dest' && n.pos!.id === sel.t!.to;
     if (sel.kind === 'dest') return n.parent === sel.key || (n.kind === 'move' && n.t!.to === sel.pos!.id);
     if (sel.kind === 'next') return n.key === sel.parent;

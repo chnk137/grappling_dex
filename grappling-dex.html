@@ -150,7 +150,42 @@ main { flex: 1; display: flex; min-height: 0; }
 /* Map */
 #board { flex: 1; min-width: 0; position: relative; background: radial-gradient(ellipse at 50% 40%, #16203a 0%, var(--bg) 70%); }
 #board #svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
-/* Map from here */
+/* Map */
+#board { display: flex; flex-direction: column; background: #070a14; }
+#board #svg { flex: 1; min-height: 0; }
+.mapbar { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: var(--bg-2); border-bottom: 1px solid var(--line); z-index: 2; }
+.mrow { display: flex; gap: 8px; align-items: center; }
+.mstart { flex: 1; display: flex; align-items: center; gap: 8px; border: 1px solid var(--brass); border-radius: 10px; background: var(--brass-soft); padding: 0 10px; min-height: 40px; }
+.mstart span { font: 800 10.5px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mstart select { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 700 15px var(--font-body); padding: 8px 0; cursor: pointer; }
+.mstart select option, .mstart select optgroup { background: var(--bg-2); color: var(--ink); }
+.mmine { min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--brass); font: 700 13px var(--font-body); cursor: pointer; }
+.mmine[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--bg); }
+.msides { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.msides button { border: 0; background: transparent; color: var(--ink); padding: 8px; font: 700 13px var(--font-body); cursor: pointer; }
+.msides button[aria-selected="true"] { background: var(--brass); color: var(--bg); }
+.mtrack { fill: none; stroke: #2c3a66; stroke-width: 1.5; }
+.mtrack2 { fill: none; stroke: #1f2a4a; stroke-width: 1.2; stroke-dasharray: 3 7; }
+.mnode { cursor: pointer; }
+.mlabel { font-family: var(--font-body); font-weight: 500; fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.mlabel.b { font-weight: 700; }
+.mlabel.dimtext { fill: #b8c0d6; }
+#svg.far .nlabel:not(.on) { display: none; }
+.mtools { position: absolute; right: 12px; top: 150px; display: flex; flex-direction: column; gap: 8px; z-index: 2; }
+.mtools button { width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--line); background: rgba(20,27,44,.92); color: var(--brass); font: 700 19px var(--font-body); cursor: pointer; }
+.mapcard { position: absolute; left: 12px; right: 12px; bottom: 12px; max-width: 520px; margin: 0 auto; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(20,27,44,.97); display: flex; flex-direction: column; gap: 6px; z-index: 3; }
+.mapcard[hidden] { display: none; }
+.mchead { display: flex; align-items: center; gap: 8px; }
+.mchead b { flex: 1; font-size: 17px; color: var(--ink); }
+.mchead .x { border: 0; background: transparent; color: var(--muted); font-size: 16px; cursor: pointer; }
+.mapcard p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.macts { display: flex; gap: 8px; }
+.macts button { flex: 1; min-height: 40px; border: 1px solid var(--brass); border-radius: 8px; background: transparent; color: var(--brass); font: 700 14px var(--font-body); cursor: pointer; }
+.macts button.primary { background: var(--brass); color: var(--bg); }
+.pflow { display: flex; flex-direction: column; gap: 6px; }
+.pflow .frow { grid-template-columns: 1fr 130px; }
+.pflow .fmove { justify-content: flex-start; }
+/* old list view */
 .modebar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg-2); }
 .modebar button { border: 0; background: transparent; color: var(--ink); padding: 8px 18px; font: 700 13px var(--font-body); cursor: pointer; white-space: nowrap; }
 .modebar button[aria-selected="true"] { background: var(--brass); color: var(--bg); }
@@ -435,10 +470,11 @@ button { -webkit-tap-highlight-color: transparent; }
 <main>
   <div id="dex"></div>
   <div id="board" hidden>
-    <div class="modebar" role="tablist"><button role="tab" data-mode="flow">From here</button><button role="tab" data-mode="whole">Whole map</button></div>
-    <div id="flow" class="flow"></div>
-    <svg id="svg" role="img" aria-label="Skill map of BJJ positions and techniques"></svg>
-    <div class="hint"><span>Drag to pan, scroll or pinch to zoom.</span><span>Zoom in to read technique names.</span></div>
+    <div id="mapbar" class="mapbar"></div>
+    <svg id="svg" role="img" aria-label="Skill map from one position: its moves and where they lead"></svg>
+    <div class="mtools"><button data-mtool="in" aria-label="Zoom in">+</button><button data-mtool="out" aria-label="Zoom out">−</button><button data-mtool="home" aria-label="Back to the start">◎</button></div>
+    <div class="hint"><span>Drag to move, scroll or pinch to zoom.</span><span>Tap a circle to see it.</span></div>
+    <div id="mapcard" class="mapcard" hidden></div>
   </div>
   <aside id="panel" aria-live="polite"></aside>
 </main>
@@ -458,7 +494,7 @@ button { -webkit-tap-highlight-color: transparent; }
       <div id="logRecent"></div>
       <div class="picked" id="logPicked"></div>
     </div>
-    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 21</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
+    <footer><span class="status"><span id="logCount">Nothing added yet</span><small class="build">Build 22</small></span><span style="display:flex;gap:8px"><button class="ghost" id="cancelLog">Cancel</button><button class="primary" id="saveLog" disabled>Save session</button></span></footer>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -992,24 +1028,6 @@ function commit() { recompute(); refresh(); save(); }
 migrateData(); // older logs from merged positions (saved on the next change)
 
 // ---------- Board ----------
-// Each position is a hub with its own ring of moves. A move that works from several
-// positions gets a copy in each ring (a "satellite"), linked only to that hub, so there
-// are no long lines across the map. Its entry lists the other positions.
-const MAP_SCALE = 1.7; // spread positions out to make room for the rings
-HUBS.forEach(h => { h.x *= MAP_SCALE; h.y *= MAP_SCALE; });
-const TYPE_ORDER = ["sub", "sweep", "pass", "move", "escape"];
-const SATS = HUBS.flatMap(h => {
-  const ts = TECHS.filter(t => t.from.includes(h.id)).sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type));
-  const r = Math.max(64, ts.length * 26 / (2 * Math.PI));
-  h.ring = ts.length ? r : 0;
-  return ts.map((t, i) => {
-    const a = -Math.PI / 2 + (i + 0.5) * 2 * Math.PI / ts.length;
-    return { id: t.id, name: t.name, type: t.type, gi: t.gi, hub: false, t, h, a, x: h.x + Math.cos(a) * r, y: h.y + Math.sin(a) * r };
-  });
-});
-// A move's own x/y (for centring the map on it) is its first copy.
-TECHS.forEach(t => { const c = SATS.find(sat => sat.t === t); t.x = c.x; t.y = c.y; });
-
 let selected = null, hidden = new Set(), view = "dex", listTab = "moves";
 const phoneQuery = window.matchMedia("(max-width: 760px)");
 let isPhone = phoneQuery.matches;
@@ -1021,134 +1039,22 @@ function reachable(n) {
   }
   return n.from.some(h => h === "standing" || hubActive(hubById.get(h)));
 }
-function mapState(n) {
-  if (n.hub) return TECHS.some(t => (t.from.includes(n.id) && posStage(t.id, n.id) >= 2) || (t.to === n.id && stage(t.id) >= 2)) ? "learned" : reachable(n) ? "reach" : "locked";
-  const s = stage(n.id);
-  return s >= 2 ? "learned" : (s === 1 || reachable(n)) ? "reach" : "locked";
-}
 
-const svg = d3.select("#svg");
-const world = svg.append("g");
-const gStars = world.append("g"), gChan = world.append("g");
-const gHub = world.append("g"), gT = world.append("g"), gTo = world.append("g"), gNodes = world.append("g");
-// Orb gradients: a bright core fading into the type colour.
-const defs = svg.append("defs");
-[["hub", "#d9b46c"], ["sub", "#f2766d"], ["sweep", "#4fcbb2"], ["pass", "#6fb2ff"], ["move", "#b58df2"], ["escape", "#a3adc4"]].forEach(([k, c]) => {
-  const g = defs.append("radialGradient").attr("id", "g-" + k).attr("cx", "38%").attr("cy", "35%").attr("r", "70%");
-  g.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff").attr("stop-opacity", .95);
-  g.append("stop").attr("offset", "35%").attr("stop-color", c);
-  g.append("stop").attr("offset", "100%").attr("stop-color", c).attr("stop-opacity", .55);
-});
-// A fixed starfield (seeded, so it looks the same on every load).
-let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-gStars.selectAll("circle").data(d3.range(320)).join("circle").attr("class", "star")
-  .attr("cx", () => (-300 + rnd() * 2100) * MAP_SCALE).attr("cy", () => (-200 + rnd() * 1950) * MAP_SCALE)
-  .attr("r", () => .4 + rnd() * 1.3).attr("opacity", () => .15 + rnd() * .55);
-// Position links run from ring edge to ring edge, so they don't cut through the move rings.
-const edge = (a, b) => {
-  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, ra = (a.ring || 30) + 14, rb = (b.ring || 30) + 14;
-  return [a.x + dx / len * ra, a.y + dy / len * ra, b.x - dx / len * rb, b.y - dy / len * rb];
-};
-const hubLinkSel = gHub.selectAll("line").data(HUB_LINKS).join("line").attr("class", "hublink")
-  .each(function (d) { const [x1, y1, x2, y2] = edge(hubById.get(d[0]), hubById.get(d[1])); d3.select(this).attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2); });
-// Spokes: each satellite to its own hub.
-const tlinks = SATS.map(sat => ({ sat, t: sat.t, h: sat.h }));
-const tLinkSel = gT.selectAll("line").data(tlinks).join("line").attr("class", d => "tlink t-" + d.t.type).attr("stroke", "currentColor")
-  .attr("x1", d => d.sat.x).attr("y1", d => d.sat.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
-// Where a move leads: only drawn while that move or its destination is selected.
-const tolinks = SATS.filter(sat => sat.t.to).map(sat => ({ sat, t: sat.t, h: hubById.get(sat.t.to) }));
-const toLinkSel = gTo.selectAll("line").data(tolinks).join("line").attr("class", d => "tolink t-" + d.t.type).attr("stroke", "currentColor")
-  .attr("x1", d => d.sat.x).attr("y1", d => d.sat.y).attr("x2", d => d.h.x).attr("y2", d => d.h.y);
-gChan.selectAll("line").data([...HUB_LINKS.map(d => { const [x1, y1, x2, y2] = edge(hubById.get(d[0]), hubById.get(d[1])); return [{ x: x1, y: y1 }, { x: x2, y: y2 }]; }), ...tlinks.map(d => [d.sat, d.h])]).join("line")
-  .attr("class", "chan").attr("x1", d => d[0].x).attr("y1", d => d[0].y).attr("x2", d => d[1].x).attr("y2", d => d[1].y);
-const oct = r => d3.range(8).map(i => { const a = Math.PI / 8 + i * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r].join(","); }).join(" ");
-const hubSel = gNodes.selectAll("g.hub").data(HUBS).join("g").attr("class", "node hub")
-  .attr("transform", d => `translate(${d.x},${d.y})`).attr("tabindex", 0).attr("role", "button").attr("aria-label", d => d.name);
-hubSel.append("circle").attr("class", "aura").attr("r", 36);
-hubSel.append("circle").attr("class", "socket").attr("r", 22);
-hubSel.append("circle").attr("class", "orb").attr("r", 17).attr("fill", "url(#g-hub)");
-hubSel.append("circle").attr("class", "cursor").attr("r", 29);
-// The position's name sits under its ring of moves, like a nameplate.
-hubSel.append("text").attr("text-anchor", "middle").attr("y", d => (d.ring ? d.ring + 34 : 40)).text(d => d.name);
-const techSel = gNodes.selectAll("g.tech").data(SATS).join("g").attr("class", d => "node tech t-" + d.type)
-  .attr("transform", d => `translate(${d.x},${d.y})`).attr("tabindex", 0).attr("role", "button").attr("aria-label", d => `${d.name} from ${d.h.name}`);
-techSel.append("circle").attr("class", "socket").attr("r", 10);
-techSel.append("circle").attr("class", "orb").attr("r", 7.5).attr("fill", d => `url(#g-${d.type})`);
-techSel.append("path").attr("class", "glyph").attr("d", d => d3.symbol(TYPES[d.type].sym, 24)());
-techSel.append("circle").attr("class", "cursor").attr("r", 16);
-// Labels point away from the hub: right of the ring on the right, left on the left.
-techSel.append("text")
-  .attr("text-anchor", d => Math.cos(d.a) >= 0 ? "start" : "end")
-  .attr("x", d => Math.cos(d.a) >= 0 ? 13 : -13)
-  .attr("y", d => 4 + Math.sin(d.a) * (Math.abs(Math.cos(d.a)) < 0.35 ? 6 : 0))
-  .text(d => d.name + (d.gi ? " (gi)" : ""));
-gNodes.selectAll(".node")
-  .on("click", (e, d) => { e.stopPropagation(); select(d.id); })
-  .on("keydown", (e, d) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(d.id); } });
-svg.on("click", () => select(null));
-// Move labels only show once zoomed in far enough to read them (further on phones).
-const zoom = d3.zoom().scaleExtent([0.15, 3]).on("zoom", e => { world.attr("transform", e.transform); svg.classed("zoomed-out", e.transform.k < (isPhone ? 1.3 : 0.85)); });
-svg.call(zoom);
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-function fit() {
-  const box = svg.node().getBoundingClientRect();
-  const xs = [...HUBS, ...SATS].map(n => n.x), ys = [...HUBS, ...SATS].map(n => n.y);
-  const x0 = d3.min(xs) - 60, x1 = d3.max(xs) + 160, y0 = d3.min(ys) - 40, y1 = d3.max(ys) + 60;
-  const k = Math.min(box.width / (x1 - x0), box.height / (y1 - y0)) || 0.5;
-  svg.call(zoom.transform, d3.zoomIdentity.translate((box.width - (x1 - x0) * k) / 2 - x0 * k, (box.height - (y1 - y0) * k) / 2 - y0 * k).scale(k));
-}
-// Phones: the whole map is too small to read, so open close in on what you train
-// (positions you're active in and their neighbours), at a zoom where labels are readable.
-function fitPhone() {
-  const box = svg.node().getBoundingClientRect();
-  // Start on the position you logged most recently, else the one you're most active in, else closed guard.
-  let start = null;
-  for (let i = data.sessions.length - 1; i >= 0 && !start; i--) {
-    const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.pos && hubById.has(k.pos));
-    if (ks.length) start = hubById.get(ks[ks.length - 1].pos);
-  }
-  start = start || HUBS.find(hubActive) || hubById.get("closed");
-  const k = 1.05;
-  svg.call(zoom.transform, d3.zoomIdentity.translate(box.width / 2 - start.x * k, box.height / 2 - start.y * k).scale(k));
-}
-function focusOn(n) {
-  const box = svg.node().getBoundingClientRect();
-  const k = Math.max(d3.zoomTransform(svg.node()).k, 1.1);
-  svg.transition().duration(reduceMotion ? 0 : 600).call(zoom.transform, d3.zoomIdentity.translate(box.width / 2 - n.x * k, box.height / 2 - n.y * k).scale(k));
-}
-function related(id) {
-  const n = nodeById.get(id), set = new Set([id]);
-  if (!n) return set;
-  if (n.hub) {
-    TECHS.forEach(t => { if (t.from.includes(id) || t.to === id) set.add(t.id); });
-    HUB_LINKS.forEach(([a, b]) => { if (a === id) set.add(b); if (b === id) set.add(a); });
-  } else { n.from.forEach(h => set.add(h)); if (n.to) set.add(n.to); }
-  return set;
-}
-// ---------- Map from here ----------
-// A focused flow from one entry, one side of a position at a time (Bottom or Top):
-// the moves you attack with from there by type (ones that lead somewhere first,
-// submissions as finish chips), where each leaves you (and on which side), and the
-// moves from there on demand. Tapping moves the starting point; a trail leads back.
-// The whole ring map stays available on desktop; on phones it's too much.
-let mapMode = "flow", flowTrail = null, flowMine = false, flowOpen = null;
+// ---------- Map ----------
+// A skill-tree map grown from one side of one position. Ring 1 = the moves you can do
+// from there. Moves that take you somewhere curve out to ring 2 = the positions (and
+// sides) you land in, each fanning out its own moves. Submissions are finishes and sit
+// between the branches. Tap a circle for its card; "Start from here" moves on.
 const FLOW_ORDER = ["sweep", "pass", "move", "escape", "sub"];
 const flowStartSide = posId => hasSides(posId) ? mainSide(posId) : null;
-const step = (id, side) => ({ id, side: hubById.has(id) ? (side !== undefined ? side : flowStartSide(id)) : null });
-const stepLabel = st => st.side && hasSides(st.id) ? `${nodeById.get(st.id).name} (${sideLabel(st.id, st.side).toLowerCase()})` : nodeById.get(st.id).name;
+const step = (id, side) => ({ id, side: side !== undefined ? side : flowStartSide(id) });
+const stepLabel = st => st.side && hasSides(st.id) ? `${hubById.get(st.id).name} (${sideLabel(st.id, st.side).toLowerCase()})` : hubById.get(st.id).name;
 // Which side a move leaves you on: escapes and moves into guards or leg entanglements
 // leave you underneath; sweeps, passes and takedowns leave you on top.
 function landingSide(t) {
   if (!t.to || !hasSides(t.to)) return null;
   const tier = hubById.get(t.to).tier;
   return t.type === "escape" || tier === "guard" || tier === "leg" ? "bottom" : "top";
-}
-function flowStart() {
-  for (let i = data.sessions.length - 1; i >= 0; i--) {
-    const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.pos && hubById.has(k.pos));
-    if (ks.length) return ks[ks.length - 1].pos;
-  }
-  return "closed";
 }
 function flowFrom(posId, side) {
   return FLOW_ORDER.map(type => ({
@@ -1157,100 +1063,178 @@ function flowFrom(posId, side) {
       .map(t => ({ t, to: t.to ? hubById.get(t.to) : null, toSide: landingSide(t) })),
   })).filter(g => g.moves.length);
 }
-function openFlow(id, side) {
-  flowTrail = [step(id, side)]; flowOpen = null; mapMode = "flow";
+function flowStart() {
+  for (let i = data.sessions.length - 1; i >= 0; i--) {
+    const ks = Object.keys(data.sessions[i].items).map(splitKey).filter(k => k.pos && hubById.has(k.pos));
+    if (ks.length) return ks[ks.length - 1].pos;
+  }
+  return "closed";
+}
+function layoutFlowMap(posId, side, keep) {
+  const SLOT = 46, MIN_BLOCK = 3, GAP = 160;
+  const moves = flowFrom(posId, side).flatMap(g => g.moves).filter(m => keep(m.t, posId));
+  const blocks = new Map();
+  moves.forEach(m => { const k = m.to ? `${m.to.id}:${m.toSide || ""}` : "finish"; if (!blocks.has(k)) blocks.set(k, { to: m.to, side: m.toSide, moves: [] }); blocks.get(k).moves.push(m); });
+  const dests = [...blocks.entries()].filter(([k]) => k !== "finish").sort((a, b) => b[1].moves.length - a[1].moves.length);
+  const fm = blocks.get("finish")?.moves || [];
+  // Finishes go into the gaps between branches so the branches fan out all the way round.
+  const order = [], chunks = Math.max(dests.length, 1);
+  dests.forEach((d, i) => { order.push(d); const part = fm.slice(Math.round(i * fm.length / chunks), Math.round((i + 1) * fm.length / chunks)); if (part.length) order.push(["f" + i, { to: null, moves: part }]); });
+  if (!dests.length && fm.length) order.push(["f0", { to: null, moves: fm }]);
+  const total = order.reduce((n, [, b]) => n + (b.to ? Math.max(MIN_BLOCK, b.moves.length) : b.moves.length), 0);
+  const root = { key: "root", kind: "root", x: 0, y: 0, angle: 0 };
+  const nodes = [root], edges = [];
+  const r1 = Math.max(120, total * SLOT / (2 * Math.PI)), r2 = r1 + GAP;
+  const ang = i => -Math.PI / 2 + (i + 0.5) * 2 * Math.PI / Math.max(total, 1);
+  let slot = 0, radius = r1;
+  for (const [k, b] of order) {
+    const width = b.to ? Math.max(MIN_BLOCK, b.moves.length) : b.moves.length, off = Math.floor((width - b.moves.length) / 2);
+    const ring = b.moves.map((m, i) => {
+      const a = ang(slot + off + i), n = { key: "m:" + m.t.id, kind: "move", angle: a, x: Math.cos(a) * r1, y: Math.sin(a) * r1, t: m.t, at: posId, finishes: !m.to };
+      nodes.push(n); edges.push({ from: root, to: n, kind: "spoke" }); return n;
+    });
+    if (b.to) {
+      const a = ang(slot + (width - 1) / 2), dest = { key: "d:" + k, kind: "dest", angle: a, x: Math.cos(a) * r2, y: Math.sin(a) * r2, pos: b.to, side: b.side };
+      nodes.push(dest); ring.forEach(n => edges.push({ from: n, to: dest, kind: "lead" }));
+      const next = flowFrom(b.to.id, b.side).flatMap(g => g.moves).filter(m => keep(m.t, b.to.id));
+      const spread = Math.min(Math.PI * 1.15, Math.max(0.6, next.length * 0.28)), rr = Math.max(78, next.length * 30 / spread);
+      next.forEach((m, i) => {
+        const na = a - spread / 2 + (next.length === 1 ? spread / 2 : i * spread / (next.length - 1));
+        const n = { key: `n:${k}:${m.t.id}`, kind: "next", angle: na, x: dest.x + Math.cos(na) * rr, y: dest.y + Math.sin(na) * rr, t: m.t, at: b.to.id, parent: dest.key, finishes: !m.to };
+        nodes.push(n); edges.push({ from: dest, to: n, kind: "branch" });
+      });
+      radius = Math.max(radius, r2 + rr + 40);
+    }
+    slot += width;
+  }
+  return { nodes, edges, r1, r2, radius };
+}
+
+let mapTrail = null, mapMine = false, mapSel = null, mapHomeKey = "", mapLayout = null;
+function openFlow(id, side, focus) {
+  mapTrail = [step(id, side)]; mapSel = focus ? "m:" + focus : null;
   if (isPhone) selected = null;
   if (view === "map") refresh(); else location.hash = "map";
 }
-function renderFlow() {
-  if (!flowTrail) flowTrail = [step(flowStart())];
-  const root = flowTrail[flowTrail.length - 1], n = nodeById.get(root.id);
-  const goBtn = (id, side, inner, cls = "") => `<button class="${cls}" data-fgo="${id}" data-fside="${side || ""}">${inner}</button>`;
-  const destRow = (pos, side, via) => {
-    const moves = flowFrom(pos.id, side).flatMap(g => g.moves).filter(m => !flowMine || posStage(m.t.id, pos.id) >= 1);
-    const key = `${pos.id}:${side || ""}`, open = flowOpen === key;
-    return `<div class="fdest"><div class="fdhead">${goBtn(pos.id, side, `<b>${esc(stepLabel({ id: pos.id, side }))}</b><small>via ${esc(via.map(t => t.name).join(", "))}</small>`, "fdname")}
-      <button class="fexpand" data-fopen="${key}" aria-expanded="${open}">${moves.length} moves ${open ? "▾" : "▸"}</button></div>
-      ${open ? `<div class="fchips">${moves.map(m => goBtn(m.t.id, null, `${icon(m.t, 11)}${esc(m.t.name)}<small>${m.to ? "→ " + esc(m.to.name) : m.t.type === "sub" ? "🏁" : ""}</small>`)).join("") || `<p class="next">Nothing logged from here yet.</p>`}</div>` : ""}</div>`;
-  };
-  let body = "";
-  if (n.hub) {
-    const st = m => posStage(m.t.id, root.id);
-    const groups = flowFrom(root.id, root.side).map(g => ({ ...g, moves: flowMine ? g.moves.filter(m => st(m) >= 1) : g.moves })).filter(g => g.moves.length);
-    const dests = new Map();
-    groups.forEach(g => g.moves.forEach(m => { if (!m.to) return; const k = `${m.to.id}:${m.toSide || ""}`; if (!dests.has(k)) dests.set(k, { pos: m.to, side: m.toSide, via: [] }); dests.get(k).via.push(m.t); }));
-    body = `<div class="froot"><span class="kind">${root.side ? "Position" : "Position · " + TIERS[n.tier]}</span><b>${icon(n, 16)} ${esc(n.name)}</b><button class="linkbtn" data-fentry="${root.id}">Open entry ›</button></div>
-      ${root.side ? `<div class="fsides" role="tablist">${["bottom", "top"].map(sd => `<button role="tab" data-fflip="${sd}" aria-selected="${root.side === sd}">${sideLabel(root.id, sd)}</button>`).join("")}</div>` : ""}
-      ${groups.length ? "" : `<p class="next">${flowMine ? "Nothing logged from this side yet. Turn off “My game only” to see every move." : "No moves from this side in the dex yet."}</p>`}
-      ${groups.map(g => {
-        const finish = g.moves.every(m => !m.to);
-        return `<h3>${g.label} (${g.moves.length})${finish && g.type === "sub" ? " · 🏁 finish here" : ""}</h3>` + (finish
-          ? `<div class="fchips">${g.moves.map(m => goBtn(m.t.id, null, `${icon(m.t, 11)}${esc(m.t.name)} ${pips(st(m))}`)).join("")}</div>`
-          : g.moves.map(m => `<div class="frow">${goBtn(m.t.id, null, `${icon(m.t, 12)}<span>${esc(m.t.name)}</span>${pips(st(m))}`, "fmove")}${m.to ? goBtn(m.to.id, m.toSide, `→ ${esc(m.to.name)}`, "fto") : `<span class="fto none">${m.t.type === "sub" ? "🏁" : "—"}</span>`}</div>`).join(""));
-      }).join("")}
-      ${dests.size ? `<h3>Where these lead</h3>${[...dests.values()].map(d => destRow(d.pos, d.side, d.via)).join("")}` : ""}`;
-  } else {
-    const from = n.from.flatMap(id => { const ss = attackSides(n, id); return (ss.length ? ss : [null]).map(side => ({ pos: hubById.get(id), side })); })
-      .filter(f => !flowMine || posStage(root.id, f.pos.id) >= 1);
-    const to = n.to ? hubById.get(n.to) : null;
-    body = `<div class="froot"><span class="kind">${TYPES[n.type].label}</span><b>${icon(n, 16)} ${esc(n.name)} ${pips(stage(root.id))}</b><button class="linkbtn" data-fentry="${root.id}">Open entry ›</button></div>
-      <h3>Starts from (${from.length})</h3>${from.length ? from.map(f => `<div class="frow single">${goBtn(f.pos.id, f.side, `${icon(f.pos, 12)}<span>${esc(stepLabel({ id: f.pos.id, side: f.side }))}</span>${pips(posStage(root.id, f.pos.id))} ›`, "fmove")}</div>`).join("") : `<p class="next">Not logged from any position yet.</p>`}
-      <h3>Leads to</h3>${to ? destRow(to, landingSide(n), [n]) : `<p class="next">${n.type === "sub" ? "🏁 It finishes the fight." : "It doesn’t lead to a set position."}</p>`}`;
-  }
-  const el = document.getElementById("flow");
-  el.innerHTML = `<div class="finner">
-    ${flowTrail.length > 1 ? `<nav class="ftrail">${flowTrail.map((st, i) => `${i ? "<span>›</span>" : ""}<button data-fcrumb="${i}" ${i === flowTrail.length - 1 ? 'aria-current="true"' : ""}>${esc(stepLabel(st))}</button>`).join("")}</nav>` : ""}
-    <div class="ftoggle"><button data-fmine aria-pressed="${flowMine}">${flowMine ? "✓ " : ""}My game only</button><span>${flowMine ? "Only moves you’ve logged" : "Everything in the dex"}</span></div>
-    ${body}</div>`;
-}
-document.getElementById("flow").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  const el = document.getElementById("flow"), root = flowTrail[flowTrail.length - 1];
-  if (b.dataset.fgo) {
-    const st = step(b.dataset.fgo, b.dataset.fside === "" && hubById.has(b.dataset.fgo) ? undefined : (b.dataset.fside || null));
-    flowTrail = [...flowTrail.filter(x => x.id !== st.id || x.side !== st.side), st]; flowOpen = null; renderFlow(); el.scrollTop = 0;
-  }
-  else if (b.dataset.fflip) { flowTrail = [...flowTrail.slice(0, -1), { ...root, side: b.dataset.fflip }]; flowOpen = null; renderFlow(); }
-  else if (b.dataset.fcrumb) { flowTrail = flowTrail.slice(0, +b.dataset.fcrumb + 1); flowOpen = null; renderFlow(); el.scrollTop = 0; }
-  else if (b.dataset.fopen) { flowOpen = flowOpen === b.dataset.fopen ? null : b.dataset.fopen; renderFlow(); }
-  else if (b.hasAttribute("data-fmine")) { flowMine = !flowMine; renderFlow(); }
-  else if (b.dataset.fentry) select(b.dataset.fentry);
-});
-document.querySelectorAll(".modebar [data-mode]").forEach(b => b.onclick = () => { mapMode = b.dataset.mode; refresh(); });
+// From an entry: a position maps from itself; a move maps from where you last did it.
+function focusOn(n) { if (!n) return; if (n.hub) openFlow(n.id); else openFlow(lastPos(n.id) || n.from[0], undefined, n.id); }
 
-// A move's copy at one position shows your progress from that position.
-function satState(d) {
-  const s = posStage(d.t.id, d.h.id);
-  return s >= 2 ? "learned" : (s === 1 || d.h.id === "standing" || hubActive(d.h)) ? "reach" : "locked";
+const svg = d3.select("#svg");
+const defs = svg.append("defs");
+defs.html(`<radialGradient id="mglow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1d2a52"/><stop offset=".55" stop-color="#0e1428"/><stop offset="1" stop-color="#070a14"/></radialGradient>
+  <radialGradient id="mcore" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fff6dc"/><stop offset=".4" stop-color="#d9b46c"/><stop offset="1" stop-color="#8a6a2e"/></radialGradient>`);
+const world = svg.append("g");
+const zoom = d3.zoom().scaleExtent([0.3, 2.5]).on("zoom", e => { world.attr("transform", e.transform); svg.classed("far", e.transform.k < 1.15); });
+svg.call(zoom).on("dblclick.zoom", null);
+function mapHome(animate) {
+  const box = svg.node().getBoundingClientRect(); if (!box.width || !mapLayout) return;
+  // Fit where the moves lead (ring 2) when there is one, else just the moves.
+  const extent = mapLayout.nodes.some(n => n.kind === "dest") ? mapLayout.r2 + 50 : mapLayout.r1 + 130;
+  const k = Math.max(0.5, Math.min(1, Math.min(box.width, box.height) / (2 * extent)));
+  (animate ? svg.transition().duration(reduceMotion ? 0 : 400) : svg).call(zoom.transform, d3.zoomIdentity.translate(box.width / 2, box.height / 2).scale(k));
 }
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const typeHex = { sub: "#f2766d", sweep: "#4fcbb2", pass: "#6fb2ff", move: "#b58df2", escape: "#a3adc4" };
 function renderMap() {
-  if (isPhone) mapMode = "flow"; // the whole map is too much on a phone
-  const flowMode = mapMode === "flow";
-  document.getElementById("flow").hidden = !flowMode;
-  svg.style("display", flowMode ? "none" : null);
-  document.querySelector("#board .hint").hidden = flowMode;
-  document.querySelectorAll(".modebar [data-mode]").forEach(b => b.setAttribute("aria-selected", b.dataset.mode === mapMode));
-  if (flowMode) { renderFlow(); return; }
-  if (!fitted) { isPhone ? fitPhone() : fit(); fitted = true; }
-  const rel = selected ? related(selected) : null;
-  svg.classed("focus", !!selected);
-  gNodes.selectAll(".node").attr("display", d => !d.hub && hidden.has(d.type) ? "none" : null).each(function (d) {
-    const s = d.hub ? mapState(d) : satState(d);
-    this.classList.toggle("learned", s === "learned"); this.classList.toggle("reach", s === "reach"); this.classList.toggle("locked", s === "locked");
-    this.classList.toggle("sel", d.id === selected);
-    // A copy lights up when its move, its own position, or where it leads is selected.
-    this.classList.toggle("hl", !!rel && (d.hub ? rel.has(d.id) : d.id === selected || d.h.id === selected || d.t.to === selected));
+  if (!mapTrail) mapTrail = [step(flowStart())];
+  const cur = mapTrail[mapTrail.length - 1];
+  mapLayout = layoutFlowMap(cur.id, cur.side, (t, at) => !mapMine || posStage(t.id, at) >= 1);
+  const L = mapLayout, byKey = new Map(L.nodes.map(n => [n.key, n]));
+  const sel = mapSel ? byKey.get(mapSel) || null : null;
+  // Bar: start picker, side, my game, trail.
+  document.getElementById("mapbar").innerHTML = `<div class="mrow"><label class="mstart"><span>From</span><select id="mapstart" aria-label="Start from">${Object.keys(TIERS).map(tier => {
+      const ps = HUBS.filter(h => h.tier === tier); return ps.length ? `<optgroup label="${TIERS[tier]}">${ps.map(h => `<option value="${h.id}"${h.id === cur.id ? " selected" : ""}>${esc(h.name)}</option>`).join("")}</optgroup>` : "";
+    }).join("")}</select></label><button class="mmine" aria-pressed="${mapMine}">${mapMine ? "✓ " : ""}My game</button></div>
+    ${cur.side ? `<div class="msides" role="tablist">${["bottom", "top"].map(sd => `<button role="tab" data-mside="${sd}" aria-selected="${cur.side === sd}">${sideLabel(cur.id, sd)}</button>`).join("")}</div>` : ""}
+    ${mapTrail.length > 1 ? `<nav class="ftrail">${mapTrail.map((st, i) => `${i ? "<span>›</span>" : ""}<button data-mcrumb="${i}" ${i === mapTrail.length - 1 ? 'aria-current="true"' : ""}>${esc(stepLabel(st))}</button>`).join("")}</nav>` : ""}`;
+  // The map.
+  const lit = n => {
+    if (!sel || sel.kind === "root" || n.key === sel.key || n.kind === "root") return true;
+    if (sel.kind === "move") return n.kind === "dest" && n.pos.id === sel.t.to;
+    if (sel.kind === "dest") return n.parent === sel.key || (n.kind === "move" && n.t.to === sel.pos.id);
+    if (sel.kind === "next") return n.key === sel.parent;
+    return false;
+  };
+  const R = L.radius + 120;
+  let html = `<circle r="${R * 1.6}" fill="url(#mglow)"/>
+    <circle r="${L.r1 - 5}" class="mtrack"/><circle r="${L.r1 + 5}" class="mtrack"/><circle r="${L.r2}" class="mtrack2"/>`;
+  L.edges.forEach(e => {
+    const on = !sel || (lit(e.from) && lit(e.to)), c = e.to.t ? typeHex[e.to.t.type] : e.from.t ? typeHex[e.from.t.type] : "#d9b46c";
+    if (e.kind === "lead") {
+      const mr = (Math.hypot(e.from.x, e.from.y) + Math.hypot(e.to.x, e.to.y)) / 2;
+      html += `<path d="M${e.from.x},${e.from.y} Q${Math.cos(e.from.angle) * mr},${Math.sin(e.from.angle) * mr} ${e.to.x},${e.to.y}" fill="none" stroke="${c}" stroke-width="2.2" stroke-opacity="${on ? .75 : .1}"/>`;
+    } else html += `<line x1="${e.from.x}" y1="${e.from.y}" x2="${e.to.x}" y2="${e.to.y}" stroke="${c}" stroke-width="${e.kind === "spoke" ? 1.6 : 1.3}" stroke-opacity="${on ? (e.kind === "spoke" ? .45 : .35) : .07}"/>`;
   });
-  tLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
-  toLinkSel.attr("display", d => hidden.has(d.t.type) ? "none" : null).classed("hl", d => !!rel && (d.t.id === selected || d.h.id === selected));
-  hubLinkSel.classed("hl", d => !!rel && (d[0] === selected || d[1] === selected));
-  tLinkSel.classed("lit", d => posStage(d.t.id, d.h.id) >= 2);
-  toLinkSel.classed("lit", d => stage(d.t.id) >= 3);
-  hubLinkSel.classed("lit", d => mapState(hubById.get(d[0])) === "learned" && mapState(hubById.get(d[1])) === "learned");
+  const label = (x, y, anchor, size, cls, text) => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${size}" class="${cls}">${esc(text)}</text>`;
+  L.nodes.forEach(n => {
+    const on = lit(n), picked = sel && sel.key === n.key;
+    if (n.kind === "root") {
+      html += `<g data-key="root" class="mnode"><circle r="44" fill="none" stroke="#d9b46c" stroke-opacity=".35" stroke-width="8"/><circle r="32" fill="url(#mcore)" stroke="#fff6dc" stroke-width="${picked ? 3 : 1.5}"/>${label(0, 66, "middle", 19, "mlabel b", hubById.get(cur.id).name)}</g>`;
+    } else if (n.kind === "dest") {
+      const below = Math.sin(n.angle) >= -0.2;
+      html += `<g data-key="${n.key}" class="mnode" opacity="${on ? 1 : .25}">${picked ? `<circle cx="${n.x}" cy="${n.y}" r="30" fill="none" stroke="#d9b46c" stroke-width="2.5"/>` : ""}<circle cx="${n.x}" cy="${n.y}" r="22" fill="#141c34" stroke="#d9b46c" stroke-width="2.5"/><circle cx="${n.x}" cy="${n.y}" r="13" fill="#d9b46c" fill-opacity=".35"/>${label(n.x, n.y + (below ? 44 : -33), "middle", 17, "mlabel b", stepLabel({ id: n.pos.id, side: n.side }))}</g>`;
+    } else {
+      const st = posStage(n.t.id, n.at), c = typeHex[n.t.type], r = n.kind === "move" ? 12 : 8.5, cos = Math.cos(n.angle), sin = Math.sin(n.angle);
+      const lx = n.x + (cos >= 0 ? r + 5 : -(r + 5)), ly = n.y + 4 + sin * (Math.abs(cos) < .35 ? 7 : 0);
+      const cls = n.kind === "move" ? "mlabel" : `mlabel nlabel${sel && on ? " on" : ""}`;
+      html += `<g data-key="${n.key}" class="mnode" opacity="${on ? 1 : .22}">${picked ? `<circle cx="${n.x}" cy="${n.y}" r="${r + 6}" fill="none" stroke="${c}" stroke-width="2"/>` : ""}
+        ${n.finishes && n.t.type === "sub" ? `<circle cx="${n.x}" cy="${n.y}" r="${r + 4}" fill="none" stroke="${c}" stroke-dasharray="2 3" stroke-opacity=".8"/>` : ""}
+        <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${st >= 2 ? c : "#0c1222"}" stroke="${c}" stroke-width="${st >= 1 ? 2.2 : 1.5}" stroke-opacity="${st >= 1 ? 1 : .7}"/>
+        ${st >= 3 ? `<circle cx="${n.x}" cy="${n.y}" r="${r * .32}" fill="#fff" fill-opacity=".9"/>` : ""}
+        ${label(lx, ly, cos >= 0 ? "start" : "end", n.kind === "move" ? 15 : 12.5, cls + (st ? "" : " dimtext"), n.t.name)}</g>`;
+    }
+  });
+  world.html(html);
+  // Card for the selection.
+  const card = document.getElementById("mapcard");
+  if (!sel) { card.hidden = true; }
+  else {
+    let title = "", sub = "", acts = [];
+    if (sel.kind === "root") { title = stepLabel(cur); sub = "Where this map starts. Tap a circle to see a move or where it leads."; acts = [["entry", cur.id, "Open position ›", 1]]; }
+    else if (sel.kind === "dest") {
+      title = stepLabel({ id: sel.pos.id, side: sel.side });
+      sub = `You land here via ${L.nodes.filter(x => x.kind === "move" && x.t.to === sel.pos.id).map(x => x.t.name).join(", ")}.`;
+      acts = [["start", `${sel.pos.id}|${sel.side || ""}`, "Start from here ›", 1], ["entry", sel.pos.id, "Open position"]];
+    } else {
+      const t = sel.t, here = posStage(t.id, sel.at);
+      title = t.name; sub = `${TYPES[t.type].label} from ${hubById.get(sel.at).name} · ${STAGES[here]}${t.to ? ` · leads to ${hubById.get(t.to).name}` : t.type === "sub" ? " · 🏁 finishes it" : ""}`;
+      acts = [["entry", t.id, "Open move ›", t.to ? 0 : 1]];
+      if (t.to) acts.unshift(["start", `${t.to}|${landingSide(t) || ""}`, `Go to ${hubById.get(t.to).name} ›`, 1]);
+    }
+    card.hidden = false;
+    card.innerHTML = `<div class="mchead"><b>${esc(title)}</b><button class="x" data-mclose aria-label="Close">✕</button></div><p>${esc(sub)}</p><div class="macts">${acts.map(([a, v, l, p]) => `<button data-mact="${a}" data-v="${v}" class="${p ? "primary" : ""}">${esc(l)}</button>`).join("")}</div>`;
+  }
+  const key = `${cur.id}:${cur.side}:${mapMine}`;
+  if (key !== mapHomeKey) { mapHomeKey = key; requestAnimationFrame(() => mapHome(false)); }
 }
+svg.on("click", e => { const g = e.target.closest && e.target.closest("[data-key]"); mapSel = g ? g.dataset.key : null; renderMap(); });
+document.getElementById("mapbar").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const cur = mapTrail[mapTrail.length - 1];
+  if (b.dataset.mside) mapTrail = [...mapTrail.slice(0, -1), { ...cur, side: b.dataset.mside }];
+  else if (b.dataset.mcrumb) mapTrail = mapTrail.slice(0, +b.dataset.mcrumb + 1);
+  else if (b.classList.contains("mmine")) mapMine = !mapMine;
+  else return;
+  mapSel = null; renderMap();
+});
+document.getElementById("mapbar").addEventListener("change", e => { if (e.target.id === "mapstart") { mapTrail = [step(e.target.value)]; mapSel = null; renderMap(); } });
+document.getElementById("mapcard").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.hasAttribute("data-mclose")) { mapSel = null; renderMap(); return; }
+  if (b.dataset.mact === "entry") select(b.dataset.v);
+  else if (b.dataset.mact === "start") {
+    const [id, sd] = b.dataset.v.split("|"), st = { id, side: sd || null };
+    mapTrail = [...mapTrail.filter(x => x.id !== id || x.side !== st.side), st]; mapSel = null; renderMap();
+  }
+});
+document.querySelectorAll("[data-mtool]").forEach(b => b.onclick = () => {
+  const t = b.dataset.mtool;
+  if (t === "home") mapHome(true); else svg.transition().duration(reduceMotion ? 0 : 250).call(zoom.scaleBy, t === "in" ? 1.4 : 1 / 1.4);
+});
 
 // ---------- Rendering ----------
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const oct = r => d3.range(8).map(i => { const a = Math.PI / 8 + i * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r].join(","); }).join(" ");
 const icon = (n, size = 14) => n.hub
   ? `<svg width="${size}" height="${size}" viewBox="-12 -12 24 24" aria-hidden="true"><polygon points="${oct(10)}" fill="var(--brass)"/></svg>`
   : `<svg width="${size}" height="${size}" viewBox="-8 -8 16 16" class="t-${n.type}" aria-hidden="true"><path d="${d3.symbol(TYPES[n.type].sym, 80)()}" fill="currentColor"/></svg>`;
@@ -1385,9 +1369,12 @@ function renderPanel() {
     const rows = scorecard(n, cur), active = hubActive(n);
     const waysIn = cur ? scorecard(n).find(r => r.label === "Ways in") : null;
     const srow = r => `<div class="srow ${active && !r.have && r.label !== "Ways in" ? "gap" : ""}"><span>${r.label}</span><span class="sbar"><i style="width:${r.total ? 100 * r.have / r.total : 0}%"></i></span><span>${r.have}/${r.total}</span></div>`;
-    const groups = Object.keys(TYPES).map(k => {
-      const ts = TECHS.filter(t => t.type === k && t.from.includes(n.id) && (!cur || attackSides(t, n.id).includes(cur)));
-      return ts.length ? `<h3>${TYPES[k].plural} from here${cur ? ` · ${sideLabel(n.id, cur)}` : ""} (${ts.length})</h3><div class="links">${ts.map(t => chip(t.id, n.id)).join("")}</div>` : "";
+    // Moves from the side being viewed, each with where it leaves you (or 🏁).
+    const groups = flowFrom(n.id, cur).map(g => {
+      const finish = g.moves.every(m => !m.to);
+      return `<h3>${g.label} from here (${g.moves.length})${finish && g.type === "sub" ? " · 🏁 finish" : ""}</h3>` + (finish
+        ? `<div class="links">${g.moves.map(m => chip(m.t.id, n.id)).join("")}</div>`
+        : `<div class="pflow">${g.moves.map(m => `<div class="frow">${chip(m.t.id, n.id).replace("<button", '<button class="fmove"')}${m.to ? `<button class="fto" data-go="${m.to.id}">→ ${esc(m.to.name)}</button>` : `<span class="fto none">${m.t.type === "sub" ? "🏁" : "—"}</span>`}</div>`).join("")}</div>`);
     }).join("");
     const arrive = TECHS.filter(t => t.to === n.id);
     const nb = HUB_LINKS.filter(l => l.includes(n.id)).map(l => l[0] === n.id ? l[1] : l[0]);
@@ -1414,7 +1401,7 @@ function renderPanel() {
         ? `<div class="portrait has-sprite t-${n.type}${s ? "" : " dim"}">${spriteImg(spriteOf(n))}<svg class="badge" width="22" height="22" viewBox="-12 -12 24 24" aria-hidden="true"><path d="${d3.symbol(TYPES[n.type].sym, 120)()}" fill="currentColor"/></svg><span class="from">From ${esc(hubById.get(spriteOf(n)).name)}${n.to ? ` → ${esc(hubById.get(n.to).name)}` : ""}</span></div>`
         : `<div class="portrait t-${n.type}${s ? "" : " dim"}"><svg width="96" height="96" viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="3 5"/><path d="${d3.symbol(TYPES[n.type].sym, 900)()}" fill="currentColor"/></svg></div>`}
       <h2>${esc(n.name)}</h2><p>${esc(n.note)}</p>
-      <button class="mapfrom" data-mapfrom="${n.id}">Map from here ›</button>
+      <button class="mapfrom" data-mapfrom="${n.id}">See it on the map ›</button>
       <div class="stagebox">
         <div class="stagehead"><b>${STAGES[s]}</b>${pips(s)}</div>
         <p class="next">${nextStep(n.id)}</p>
@@ -1452,7 +1439,7 @@ function renderPanel() {
     const ct = panel.querySelector("#clearToday"); if (ct) ct.onclick = () => clearToday(n.id);
     panel.querySelector("#base").onchange = e => { const v = +e.target.value; if (v) data.base[n.id] = v; else delete data.base[n.id]; commit(); };
   }
-  panel.querySelectorAll("[data-mapfrom]").forEach(b => b.onclick = () => openFlow(b.dataset.mapfrom, b.dataset.mapside || undefined));
+  panel.querySelectorAll("[data-mapfrom]").forEach(b => b.onclick = () => hubById.has(b.dataset.mapfrom) ? openFlow(b.dataset.mapfrom, b.dataset.mapside || undefined) : focusOn(nodeById.get(b.dataset.mapfrom)));
   panel.querySelectorAll("[data-tabside]").forEach(b => b.onclick = () => { hubSide = { id: n.id, side: b.dataset.tabside }; renderPanel(); });
   panel.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { select(b.dataset.go); if (view === "map" && !isPhone) focusOn(nodeById.get(b.dataset.go)); });
   panel.insertAdjacentHTML("afterbegin", `<div class="backbar"><button id="backBtn">‹ Back</button><span class="entry-no">${entryNo.get(n.id)}</span></div>`);
@@ -1651,7 +1638,6 @@ function setView(v) {
   if (isPhone) dexEl.querySelector(".listhead").appendChild(f);
   else document.querySelector("header .search").before(f);
   refresh();
-  if (v === "map" && selected && !isPhone) focusOn(nodeById.get(selected));
 }
 const viewFromHash = () => ({ "#map": "map", "#progress": "progress" })[location.hash] || "dex";
 window.addEventListener("hashchange", () => setView(viewFromHash()));
